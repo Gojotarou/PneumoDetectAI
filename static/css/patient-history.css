@@ -1,0 +1,271 @@
+/* Patient History Page Styles */
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.metric-card {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.metric-info h3 {
+    font-size: 13px;
+    color: #95a5a6;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.metric-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.metric-icon.blue {
+    background: #e7f3ff;
+    color: #007bff;
+}
+
+.metric-icon.red {
+    background: #ffebee;
+    color: #dc3545;
+}
+
+.metric-icon.green {
+    background: #e8f9f0;
+    color: #28a745;
+}
+
+/* Data Table Styles */
+.records-table {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.records-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.records-table thead {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.records-table th {
+    padding: 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #5a6c7d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.records-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 13px;
+    color: #2c3e50;
+}
+
+.records-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.records-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.diagnosis-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.diagnosis-badge.pneumonia {
+    background: #ffebee;
+    color: #dc3545;
+}
+
+.diagnosis-badge.normal {
+    background: #e8f9f0;
+    color: #28a745;
+}
+
+.confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.confidence-badge.high {
+    background: #e7f3ff;
+    color: #007bff;
+}
+
+.confidence-badge.medium {
+    background: #fff3e0;
+    color: #ff9800;
+}
+
+.confidence-badge.low {
+    background: #f0f0f0;
+    color: #6c757d;
+}
+
+.severity-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 70px;
+}
+
+.severity-badge.score-0,
+.severity-badge.score-1 {
+    background: #e8f9f0;
+    color: #28a745;
+}
+
+.severity-badge.score-2 {
+    background: #fff3e0;
+    color: #ff9800;
+}
+
+.severity-badge.score-3 {
+    background: #ffe0e0;
+    color: #ff5722;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    background: white;
+    color: #5a6c7d;
+    border: 1px solid #dee2e6;
+}
+
+.action-btn:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.action-btn.delete:hover {
+    background: #ffebee;
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.back-button {
+    margin-top: 32px;
+    text-align: center;
+}
+
+.back-btn {
+    padding: 12px 32px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    color: #5a6c7d;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.back-btn:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 32px;
+    color: #95a5a6;
+}
+
+.empty-state p {
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .records-table th,
+    .records-table td {
+        padding: 12px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

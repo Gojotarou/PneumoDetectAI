@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PneumoDetect AI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo"> <!-- add logo icon later on -->
+                <div class="logo-icon">P</div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="active"><span class="nav-icon"><img src="images/dashboard.png" alt="Dashboard"></span>Dashboard</a>
+                <a href="new_analysis.html"><span class="nav-icon"><img src="images/upload.png" alt="New Analysis"></span>New Analysis</a>
+                <a href="#"><span class="nav-icon"><img src="images/history.png" alt="Patient History"></span>Patient History</a>
+                <a href="#"><span class="nav-icon"><img src="images/alerts.png" alt="Alerts"></span>Alerts</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar">Dr</div>
+                <div class="user-details">
+                    <h3>Dr. Sarah Johnson</h3>
+                    <p>drsarahjohnson@hospital.com</p>
+                </div>
+            </div>
+            <button class="logout-btn">Logout</button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-header">
+                <h1>Dashboard</h1>
+                <p>Welcome back! Here's an overview of your recent activity.</p>
+                
+                
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Total Analyses</span>
+                            <div class="stat-icon blue">📊</div>
+                        </div>
+                        <div class="stat-value">1,247</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Patients</span>
+                            <div class="stat-icon green">👥</div>
+                        </div>
+                        <div class="stat-value">856</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Pending Reviews</span>
+                            <div class="stat-icon orange">⏳</div>
+                        </div>
+                        <div class="stat-value">23</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Critical Alerts</span>
+                            <div class="stat-icon red">⚠️</div>
+                        </div>
+                        <div class="stat-value">4</div>
+                    </div>
+                </div>
+
+                <!-- Recent Cases -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Recent Cases</h2>
+                        <p>Latest X-ray analyses and their results</p>
+                    </div>
+                    <div class="case-list">
+                        <div class="case-item">
+                            <div class="case-info">
+                                <div class="case-patient">
+                                    <h4>John Anderson</h4>
+                                    <span class="case-age">67 years</span>
+                                </div>
+                                <div class="case-details">
+                                    <span class="case-id">MID-2024-001</span>
+                                    <span class="case-severity critical">Critical</span>
+                                    <span class="case-confidence">Severity: 90%</span>
+                                </div>
+                            </div>
+                            <span class="case-date">2025-11-10 09:30</span>
+                            <a href="#" class="view-btn">View Details</a>
+                        </div>
+
+                        <div class="case-item">
+                            <div class="case-info">
+                                <div class="case-patient">
+                                    <h4>Maria Garcia</h4>
+                                    <span class="case-age">45 years</span>
+                                </div>
+                                <div class="case-details">
+                                    <span class="case-id">MID-2024-002</span>
+                                    <span class="case-severity moderate">Moderate</span>
+                                    <span class="case-confidence">Severity: 66%</span>
+                                </div>
+                            </div>
+                            <span class="case-date">2025-11-10 08:15</span>
+                            <a href="#" class="view-btn">View Details</a>
+                        </div>
+
+                        <div class="case-item">
+                            <div class="case-info">
+                                <div class="case-patient">
+                                    <h4>Robert Chen</h4>
+                                    <span class="case-age">54 years</span>
+                                </div>
+                                <div class="case-details">
+                                    <span class="case-id">MID-2024-003</span>
+                                    <span class="case-severity low-risk">Low Risk</span>
+                                    <span class="case-confidence">Severity: 32%</span>
+                                </div>
+                            </div>
+                            <span class="case-date">2025-11-09 16:45</span>
+                            <a href="#" class="view-btn">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

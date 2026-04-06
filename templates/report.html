@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient History - PneumoDetect AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/patient-history.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Dashboard"></span>Dashboard</a>
+                <a href="{{ url_for('new_analysis') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
+                <a href="{{ url_for('report') }}" class="active"><span class="nav-icon"><img src="{{ url_for('static', filename='images/history.png') }}" alt="Patient History"></span>Patient History</a>
+                <a href="{{ url_for('alerts') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/alerts.png') }}" alt="Alerts"></span>Alerts</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar">Dr</div>
+                <div class="user-details">
+                    <h3>Dr. Sarah Johnson</h3>
+                    <p>drsarahjohnson@hospital.com</p>
+                </div>
+            </div>
+            <button class="logout-btn">Logout</button>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-header">
+                <h1>Patient History</h1>
+                <p>Review past diagnoses and track patient progress over time</p>
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Metrics Cards -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h3>Total Records</h3>
+                            <div class="metric-value" id="total-records">0</div>
+                        </div>
+                        <div class="metric-icon blue">📊</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h3>Pneumonia Cases</h3>
+                            <div class="metric-value" id="pneumonia-count">0</div>
+                        </div>
+                        <div class="metric-icon red">⚠️</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h3>Normal Cases</h3>
+                            <div class="metric-value" id="normal-count">0</div>
+                        </div>
+                        <div class="metric-icon green">✓</div>
+                    </div>
+                </div>
+
+                <!-- Records Table -->
+                <div class="records-table">
+                    <div class="table-wrapper">
+                        <table id="records-data">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient ID</th>
+                                    <th>Diagnosis</th>
+                                    <th>Confidence</th>
+                                    <th>Severity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 40px; color: #95a5a6;">Loading patient records...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Back to Dashboard -->
+                <div class="back-button">
+                    <a href="{{ url_for('dashboard') }}" class="back-btn">Back to Dashboard</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Load patient records on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPatientRecords();
+        });
+
+        async function loadPatientRecords() {
+            try {
+                // Fetch patient records from API
+                const response = await fetch('/api/patient-records');
+                const data = await response.json();
+
+                if (data.success) {
+                    updateMetrics(data.records);
+                    populateTable(data.records);
+                } else {
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading patient records:', error);
+                showEmptyState();
+            }
+        }
+
+        function updateMetrics(records) {
+            const totalRecords = records.length;
+            const pneumoniaCases = records.filter(r => r.pneumonia_detected).length;
+            const normalCases = totalRecords - pneumoniaCases;
+
+            document.getElementById('total-records').textContent = totalRecords;
+            document.getElementById('pneumonia-count').textContent = pneumoniaCases;
+            document.getElementById('normal-count').textContent = normalCases;
+        }
+
+        function populateTable(records) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #95a5a6;">
+                            No patient records found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            records.forEach(record => {
+                const diagnosis = record.pneumonia_detected ? 'Pneumonia' : 'Normal';
+                const diagnosisBadgeClass = record.pneumonia_detected ? 'pneumonia' : 'normal';
+                const confidencePercent = Math.round(record.confidence);
+                const confidenceClass = confidencePercent >= 80 ? 'high' : (confidencePercent >= 60 ? 'medium' : 'low');
+                const severityClass = `score-${record.curb_score || 0}`;
+                const severityText = `Score ${record.curb_score || 0}`;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(record.timestamp)}</td>
+                    <td>${record.medical_id || 'N/A'}</td>
+                    <td>
+                        <span class="diagnosis-badge ${diagnosisBadgeClass}">
+                            ${diagnosis}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="confidence-badge ${confidenceClass}">
+                            ⊙ ${confidencePercent}%
+                        </span>
+                    </td>
+                    <td>
+                        <span class="severity-badge ${severityClass}">
+                            ${severityText}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn" onclick="viewRecord('${record.id}')">
+                                👁️ View
+                            </button>
+                            <button class="action-btn delete" onclick="deleteRecord('${record.id}')">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toISOString().split('T')[0];
+        }
+
+        function viewRecord(recordId) {
+            // Navigate to detailed record view
+            console.log('Viewing record:', recordId);
+            alert('Record view feature coming soon');
+        }
+
+        function deleteRecord(recordId) {
+            if (confirm('Are you sure you want to delete this record?')) {
+                console.log('Deleting record:', recordId);
+                // API call to delete record would go here
+                alert('Record deleted');
+                loadPatientRecords(); // Reload table
+            }
+        }
+
+        function showEmptyState() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: #95a5a6;">
+                        Unable to load patient records. Please try again later.
+                    </td>
+                </tr>
+            `;
+        }
+    </script>
+</body>
+</html>

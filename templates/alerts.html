@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert System - PneumoDetect AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Dashboard"></span>Dashboard</a>
+                <a href="{{ url_for('new_analysis') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
+                <a href="{{ url_for('report') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/history.png') }}" alt="Patient History"></span>Patient History</a>
+                <a href="{{ url_for('alerts') }}" class="active"><span class="nav-icon"><img src="{{ url_for('static', filename='images/alerts.png') }}" alt="Alerts"></span>Alerts</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar">Dr</div>
+                <div class="user-details">
+                    <h3>Dr. Sarah Johnson</h3>
+                    <p>johannesric03@gmail.com</p>
+                </div>
+            </div>
+            <button class="logout-btn">Logout</button>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-header">
+                <h1>Alert System</h1>
+                <p>Automated alerts for severe and critical pneumonia cases</p>
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Alert Metrics -->
+                <div class="alerts-metrics-grid">
+                    <div class="alert-metric-card">
+                        <div>
+                            <h3>Critical Alerts</h3>
+                            <div class="alert-metric-value" id="critical-count">0</div>
+                        </div>
+                        <div class="alert-metric-icon critical">⚠️</div>
+                    </div>
+                    <div class="alert-metric-card">
+                        <div>
+                            <h3>Moderate Alerts</h3>
+                            <div class="alert-metric-value" id="moderate-count">0</div>
+                        </div>
+                        <div class="alert-metric-icon moderate">🔔</div>
+                    </div>
+                    <div class="alert-metric-card">
+                        <div>
+                            <h3>In Progress</h3>
+                            <div class="alert-metric-value" id="progress-count">0</div>
+                        </div>
+                        <div class="alert-metric-icon progress">⏱️</div>
+                    </div>
+                    <div class="alert-metric-card">
+                        <div>
+                            <h3>Resolved Today</h3>
+                            <div class="alert-metric-value" id="resolved-count">0</div>
+                        </div>
+                        <div class="alert-metric-icon resolved">✓</div>
+                    </div>
+                </div>
+
+                <!-- Alerts List -->
+                <div class="alerts-container" id="alerts-container">
+                    <div style="text-align: center; padding: 60px 32px; color: #95a5a6;">
+                        <p>Loading alerts...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Load alerts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAlerts();
+        });
+
+        async function loadAlerts() {
+            try {
+                // Fetch patient records from API to extract critical cases
+                const response = await fetch('/api/patient-records');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Filter for critical and moderate cases
+                    const alerts = data.records.filter(r => r.pneumonia_detected);
+                    updateMetrics(alerts);
+                    populateAlerts(alerts);
+                } else {
+                    showNoAlerts();
+                }
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                showNoAlerts();
+            }
+        }
+
+        function updateMetrics(alerts) {
+            // Categorize alerts by severity
+            const critical = alerts.filter(a => a.curb_score >= 3).length;
+            const moderate = alerts.filter(a => a.curb_score === 2).length;
+            const inProgress = Math.floor(critical * 0.4); // Simulated in-progress count
+            const resolved = alerts.length - critical - moderate - inProgress;
+
+            document.getElementById('critical-count').textContent = critical;
+            document.getElementById('moderate-count').textContent = moderate;
+            document.getElementById('progress-count').textContent = inProgress;
+            document.getElementById('resolved-count').textContent = resolved;
+        }
+
+        function populateAlerts(alerts) {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+
+            if (alerts.length === 0) {
+                showNoAlerts();
+                return;
+            }
+
+            alerts.forEach(alert => {
+                const severityClass = alert.curb_score >= 3 ? 'critical' : (alert.curb_score === 2 ? 'moderate' : 'low');
+                const severityBadge = alert.curb_score >= 3 ? 'CRITICAL' : (alert.curb_score === 2 ? 'MODERATE' : 'LOW');
+                const confidencePercent = Math.round(alert.confidence);
+                const severityPercent = (alert.curb_score / 5) * 100;
+
+                const alertCard = document.createElement('div');
+                alertCard.className = `alert-card ${severityClass}`;
+                alertCard.innerHTML = `
+                    <div class="alert-header">
+                        <span class="alert-badge ${severityClass}">${severityBadge}</span>
+                        <div class="alert-title">Patient ${alert.medical_id}</div>
+                    </div>
+
+                    <div class="alert-content">
+                        <div class="alert-info">
+                            <div class="alert-info-row">
+                                <span class="alert-info-label">Date:</span>
+                                <span class="alert-info-value">${formatDate(alert.timestamp)}</span>
+                            </div>
+                            <div class="alert-info-row">
+                                <span class="alert-info-label">AI Confidence:</span>
+                                <span class="alert-info-value">${confidencePercent}% (Pneumonia)</span>
+                            </div>
+                            <div class="alert-info-row">
+                                <span class="alert-info-label">Severity Score:</span>
+                                <span class="alert-info-value" style="color: ${alert.curb_score >= 3 ? '#dc3545' : '#ff9800'};"><strong>${alert.curb_score} ${alert.curb_score >= 3 ? '(HIGH RISK)' : '(MODERATE)'}</strong></span>
+                            </div>
+                            <div class="alert-action-required">ACTION REQUIRED</div>
+                        </div>
+                        <div class="alert-severity-section">
+                            <div class="alert-severity-label">AI Confidence: ${confidencePercent}% (Pneumonia)</div>
+                            <div class="alert-severity-bar">
+                                <div class="alert-severity-fill" style="width: ${severityPercent}%">
+                                    <div class="alert-severity-thumb" style="left: ${severityPercent}%"></div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: #95a5a6; margin-top: 8px;">
+                                Severity Score: ${alert.curb_score} (HIGH RISK)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert-actions">
+                        <button class="alert-btn notify" onclick="notifyDoctor('${alert.medical_id}')">
+                            NOTIFY DOCTOR
+                        </button>
+                        <button class="alert-btn view" onclick="viewCase('${alert.id}')">
+                            VIEW CASE
+                        </button>
+                    </div>
+                `;
+                container.appendChild(alertCard);
+            });
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toISOString().split('T')[0];
+        }
+
+        function notifyDoctor(patientId) {
+            console.log('Notifying doctor about:', patientId);
+            alert(`Doctor notification sent for patient ${patientId}`);
+        }
+
+        function viewCase(alertId) {
+            console.log('Viewing case:', alertId);
+            alert('Case view feature coming soon');
+        }
+
+        function showNoAlerts() {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = `
+                <div class="no-alerts">
+                    <p>✓ No critical alerts at this time</p>
+                    <p style="font-size: 13px; color: #c0c0c0;">All patient cases are stable</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

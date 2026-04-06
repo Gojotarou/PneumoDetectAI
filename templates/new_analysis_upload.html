@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>New Analysis - Upload X-Ray</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* small page-specific helpers */
+        .two-col { display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start }
+        .upload-box { min-height: 360px; display:flex; flex-direction:column; }
+        .upload-zone { flex:1; border:2px dashed #e0e6ea; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; flex-direction:column; padding:28px }
+        .upload-zone p { color:#99a0a6; margin-top:12px }
+        .meta-row { color:#6c757d; margin:12px 0 20px; font-size:14px }
+        .analyze-row { margin-top:20px; }
+        .analyze-cta { width:100%; display:block; text-align:center; padding:14px 18px; border-radius:10px; background:#05021a; color:#fff; font-weight:700; text-decoration:none }
+        .small-hint { font-size:13px; color:#95a5a6 }
+        .confusion-toggle { display:flex; gap:8px }
+        .confusion-toggle button { flex:1; padding:8px 10px; border-radius:8px; border:1px solid #e6e9ec; background:#fff }
+        .loading { display:none; text-align:center; padding:20px; color:#007bff; font-weight:600 }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Dashboard"></span>Dashboard</a>
+                <a href="{{ url_for('new_analysis') }}" class="active"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
+                <a href="{{ url_for('report') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/history.png') }}" alt="Patient History"></span>Patient History</a>
+                <a href="{{ url_for('alerts') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/alerts.png') }}" alt="Alerts"></span>Alerts</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar">Dr</div>
+                <div class="user-details">
+                    <h3>Dr. Sarah Johnson</h3>
+                    <p>johannesric03@gmail.com</p>
+                </div>
+            </div>
+            <button class="logout-btn">Logout</button>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-header">
+                <h1>New Analysis</h1>
+                <p>Upload and analyze chest X-ray images for pneumonia detection</p>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="stepper" aria-hidden="false">
+                    <div class="step">
+                        <div class="circle">1</div>
+                        <div class="label">Patient Info</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step active">
+                        <div class="circle">2</div>
+                        <div class="label">Upload X-Ray</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step">
+                        <div class="circle">3</div>
+                        <div class="label">Results</div>
+                    </div>
+                </div>
+
+                <div class="meta-row" id="patientMetaRow">
+                    <strong>Patient:</strong> <span id="displayName">—</span> &nbsp; • &nbsp; <strong>Age:</strong> <span id="displayAge">—</span> &nbsp; • &nbsp; <strong>ID:</strong> <span id="displayId">—</span>
+                </div>
+
+                <div class="two-col">
+                    <div class="upload-box card">
+                        <h3 style="margin:0 0 12px">Image Upload</h3>
+                        <p class="small-hint" style="margin-bottom:12px">Upload chest X-ray image (JPEG/PNG format)</p>
+                        <div class="upload-zone" id="dropZone">
+                            <img id="previewImg" alt="preview" style="max-width:100%; opacity:0; transition:opacity .18s; border-radius:8px; margin-bottom:12px; display:block">
+                            <p id="uploadText">Drag & Drop X-Ray here</p>
+                            <p class="small-hint">OR</p>
+                            <label class="btn btn-outline" style="cursor:pointer; margin-top:12px">
+                                <input type="file" id="fileInput" accept="image/*" style="display:none">
+                                Browse Files
+                            </label>
+                            <button type="button" id="deleteImageBtn" style="margin-top:12px; padding:8px 16px; background:#dc3545; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:none; font-size:13px;">🗑️ Delete Image</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="margin:0 0 12px">Clinical Input (CURB-65)</h3>
+                        <p class="small-hint" style="margin-bottom:14px">Enter patient clinical parameters</p>
+
+                        <div class="card-body">
+                            <div class="form-row">
+                                <label for="ageInput">Age</label>
+                                <input id="ageInput" type="number" min="0" placeholder="Age" value="">
+                            </div>
+
+                            <div class="form-row">
+                                <label>Confusion (Y/N)</label>
+                                <div class="confusion-toggle">
+                                    <button type="button" id="confYes" data-value="1">Yes</button>
+                                    <button type="button" id="confNo" data-value="0">No</button>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label for="ureaInput">Urea (mmol/L)</label>
+                                <input id="ureaInput" type="number" step="0.1" placeholder="Enter urea level">
+                            </div>
+
+                            <div class="form-row">
+                                <label for="respInput">Resp. Rate (breaths/min)</label>
+                                <input id="respInput" type="number" placeholder="Enter respiratory rate">
+                            </div>
+
+                            <div class="form-row">
+                                <label for="sbpInput">BP - Systolic (mmHg)</label>
+                                <input id="sbpInput" type="number" placeholder="Enter systolic BP">
+                            </div>
+
+                            <div class="form-row">
+                                <label for="dbpInput">BP - Diastolic (mmHg)</label>
+                                <input id="dbpInput" type="number" placeholder="Enter diastolic BP">
+                            </div>
+
+                            <div id="curbResult" class="form-row" style="margin-top:6px;">
+                                <label>CURB-65 Score</label>
+                                <div id="curbScore" style="padding:10px 12px; border-radius:8px; background:#f8f9fa; color:#2c3e50; font-weight:600">Score: — &nbsp; • &nbsp; Risk: —</div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card analyze-row" style="margin-top:22px; padding:18px 22px;">
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <a class="btn btn-outline" href="{{ url_for('new_analysis') }}">Back to Patient Info</a>
+                        <button id="analyzeBtn" class="analyze-cta btn-primary">Analyze Patient</button>
+                    </div>
+                    <div class="loading" id="loadingMsg">Analyzing... Please wait</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // small helper: wire file input label and upload state
+        (function(){
+            const fileInput = document.getElementById('fileInput');
+            const dropZone = document.getElementById('dropZone');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const deleteImageBtn = document.getElementById('deleteImageBtn');
+            const uploadText = document.getElementById('uploadText');
+            let hasFile = false;
+
+            function enableAnalyze(enabled){
+                hasFile = !!enabled;
+            }
+
+            function displayImage(file) {
+                const name = file.name;
+                uploadText.textContent = name;
+                // preview
+                const img = dropZone.querySelector('img');
+                try{
+                    const url = URL.createObjectURL(file);
+                    img.src = url;
+                    img.onload = ()=> URL.revokeObjectURL(url);
+                    img.style.opacity = 1;
+                }catch(err){/* ignore */}
+                deleteImageBtn.style.display = 'block';
+                enableAnalyze(true);
+            }
+
+            function clearImage() {
+                fileInput.value = '';
+                uploadText.textContent = 'Drag & Drop X-Ray here';
+                const img = dropZone.querySelector('img');
+                img.src = '';
+                img.style.opacity = 0;
+                deleteImageBtn.style.display = 'none';
+                enableAnalyze(false);
+            }
+
+            fileInput?.addEventListener('change', function(e){
+                if(!this.files || !this.files[0]) return enableAnalyze(false);
+                displayImage(this.files[0]);
+            });
+
+            // Delete button handler
+            deleteImageBtn?.addEventListener('click', function(e){
+                e.preventDefault();
+                clearImage();
+            });
+
+            // drag & drop handlers
+            dropZone?.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.style.borderColor='#a6b6c3'; });
+            dropZone?.addEventListener('dragleave', function(e){ dropZone.style.borderColor='#e0e6ea'; });
+            dropZone?.addEventListener('drop', function(e){
+                e.preventDefault(); dropZone.style.borderColor='#e0e6ea';
+                const dt = e.dataTransfer;
+                if(!dt || !dt.files || !dt.files[0]) return;
+                const f = dt.files[0];
+                displayImage(f);
+                // populate file input (best-effort)
+                try{ fileInput.files = dt.files; } catch(err){}
+            });
+
+            // Analyze button calls Flask API
+            analyzeBtn?.addEventListener('click', async function(e){
+                e.preventDefault();
+                
+                // Validate inputs
+                const missing = [];
+                if(!hasFile) missing.push('Upload an X-ray image');
+
+                const urea = (document.getElementById('ureaInput')||{}).value || '';
+                const resp = (document.getElementById('respInput')||{}).value || '';
+                const sbp = (document.getElementById('sbpInput')||{}).value || '';
+                const dbp = (document.getElementById('dbpInput')||{}).value || '';
+
+                if(!urea || !resp || !sbp || !dbp) {
+                    missing.push('Complete CURB-65 inputs (urea, respiratory rate, systolic and diastolic BP)');
+                }
+
+                if(missing.length){
+                    alert('Please complete the following before analyzing:\n\n• ' + missing.join('\n• '));
+                    return;
+                }
+
+                // Show loading
+                document.getElementById('loadingMsg').style.display = 'block';
+                analyzeBtn.disabled = true;
+
+                // Prepare form data for API call
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+                formData.append('age', document.getElementById('ageInput').value);
+                formData.append('confusion', (document.getElementById('confYes').style.backgroundColor === 'rgb(0, 123, 255)' ? 1 : 0));
+                formData.append('urea', urea);
+                formData.append('respiratory', resp);
+                formData.append('sbp', sbp);
+                formData.append('dbp', dbp);
+                formData.append('patient_name', sessionStorage.getItem('patient_name') || '');
+                formData.append('medical_id', sessionStorage.getItem('patient_medical_id') || '');
+
+                try {
+                    // Call Flask API
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if(response.ok && result.success){
+                        // Store result in sessionStorage for results page
+                        sessionStorage.setItem('analysis_result', JSON.stringify(result));
+                        // Navigate to results (Step 3)
+                        window.location.href = '{{ url_for("results") }}';
+                    } else {
+                        alert('Analysis failed: ' + (result.error || 'Unknown error'));
+                        document.getElementById('loadingMsg').style.display = 'none';
+                        analyzeBtn.disabled = false;
+                    }
+                } catch(err){
+                    alert('Error: ' + err.message);
+                    document.getElementById('loadingMsg').style.display = 'none';
+                    analyzeBtn.disabled = false;
+                }
+            });
+
+            // initialize state
+            enableAnalyze(false);
+        })();
+
+        // Load patient info from sessionStorage on page load
+        (function(){
+            const name = sessionStorage.getItem('patient_name');
+            const age = sessionStorage.getItem('patient_age');
+            const medicalId = sessionStorage.getItem('patient_medical_id');
+
+            if(name) document.getElementById('displayName').textContent = name;
+            if(age) document.getElementById('displayAge').textContent = age;
+            if(medicalId) document.getElementById('displayId').textContent = medicalId;
+
+            // Auto-populate age in CURB-65 section if available
+            if(age) document.getElementById('ageInput').value = age;
+        })();
+
+        // CURB-65 calculator
+        (function(){
+            const ageEl = document.getElementById('ageInput');
+            const confYes = document.getElementById('confYes');
+            const confNo = document.getElementById('confNo');
+            const ureaEl = document.getElementById('ureaInput');
+            const respEl = document.getElementById('respInput');
+            const sbpEl = document.getElementById('sbpInput');
+            const dbpEl = document.getElementById('dbpInput');
+            const scoreEl = document.getElementById('curbScore');
+
+            let confusion = 0;
+
+            function updateConfButtons(){
+                if(confusion){
+                    confYes.style.background = '#007bff'; confYes.style.color = '#fff';
+                    confNo.style.background = '#fff'; confNo.style.color = '#000';
+                } else {
+                    confNo.style.background = '#007bff'; confNo.style.color = '#fff';
+                    confYes.style.background = '#fff'; confYes.style.color = '#000';
+                }
+            }
+
+            function computeCURB(){
+                const age = parseInt(ageEl.value) || 0;
+                const urea = parseFloat(ureaEl.value) || 0;
+                const resp = parseFloat(respEl.value) || 0;
+                const sbp = parseFloat(sbpEl.value) || 0;
+                const dbp = parseFloat(dbpEl.value) || 0;
+
+                let score = 0;
+                if(confusion) score += 1;
+                if(urea > 7) score += 1;
+                if(resp >= 30) score += 1;
+                if(sbp < 90 || dbp <= 60) score += 1;
+                if(age >= 65) score += 1;
+
+                let risk = '—';
+                let color = '#f8f9fa';
+                if(score <= 1){ risk = 'Low'; color = '#e9f7ef'; }
+                else if(score === 2){ risk = 'Moderate'; color = '#fff7e6'; }
+                else { risk = 'High'; color = '#ffecec'; }
+
+                scoreEl.textContent = `Score: ${score}  •  Risk: ${risk}`;
+                scoreEl.style.background = color;
+            }
+
+            [ageEl, ureaEl, respEl, sbpEl, dbpEl].forEach(el=> el && el.addEventListener('input', computeCURB));
+            confYes?.addEventListener('click', function(){ confusion = 1; updateConfButtons(); computeCURB(); });
+            confNo?.addEventListener('click', function(){ confusion = 0; updateConfButtons(); computeCURB(); });
+
+            if(typeof updateConfButtons === 'function') updateConfButtons();
+            computeCURB();
+        })();
+    </script>
+</body>
+</html>

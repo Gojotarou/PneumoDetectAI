@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Analysis Result - PneumoDetect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Page-specific helpers for Results layout */
+        .results-grid { display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start; max-width:1100px }
+        .xray-card { padding:18px; display:flex; flex-direction:column; gap:16px }
+        .xray-frame { background:#fff; border-radius:12px; padding:18px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.04) }
+        .xray-frame img { max-width:520px; width:100%; border-radius:8px }
+        .ai-card { display:flex; flex-direction:column; gap:12px }
+        .ai-card .section { background:#fff; border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04) }
+        .ai-status { font-size:18px; font-weight:700; color:var(--danger) }
+        .meta-small { font-size:13px; color:var(--text-light) }
+        .annotations textarea { width:100%; min-height:120px; padding:12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa }
+        @media (max-width:900px){ .results-grid{ grid-template-columns: 1fr; } .xray-frame img{ max-width:100% } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Dashboard"></span>Dashboard</a>
+                <a href="{{ url_for('new_analysis') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
+                <a href="{{ url_for('report') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/history.png') }}" alt="Patient History"></span>Patient History</a>
+                <a href="{{ url_for('alerts') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/alerts.png') }}" alt="Alerts"></span>Alerts</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar">Dr</div>
+                <div class="user-details">
+                    <h3>Dr. Sarah Johnson</h3>
+                    <p>johannesric03@gmail.com</p>
+                </div>
+            </div>
+            <button class="logout-btn">Logout</button>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-header">
+                <h1>New Analysis</h1>
+                <p>Upload and analyze chest X-ray images for pneumonia detection</p>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="stepper" aria-hidden="false">
+                    <div class="step done">
+                        <div class="circle">1</div>
+                        <div class="label">Patient Info</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step done">
+                        <div class="circle">2</div>
+                        <div class="label">Upload X-Ray</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step active">
+                        <div class="circle">3</div>
+                        <div class="label">Results</div>
+                    </div>
+                </div>
+
+                <h2 style="margin:0 0 8px">Analysis Result</h2>
+                <div class="meta-small" id="patientMeta" style="margin-bottom:18px">Loading patient data...</div>
+
+                <div class="results-grid">
+                    <div class="xray-card">
+                        <div class="section xray-frame">
+                            <img id="resultXray" src="https://via.placeholder.com/520x520.png?text=Chest+X-Ray" alt="Patient X-ray">
+                        </div>
+                    </div>
+
+                    <div class="ai-card">
+                        <div class="section">
+                            <h4 style="margin:0 0 6px">AI DIAGNOSIS</h4>
+                            <div style="height:1px; background:#e9ecef; margin:8px 0 12px"></div>
+                            <div style="display:flex; justify-content:space-between; align-items:center">
+                                <div>
+                                    <div style="font-size:13px; color:#95a5a6">Status:</div>
+                                    <div class="ai-status" style="margin-top:6px" id="diagnosisStatus">LOADING...</div>
+                                    <div style="margin-top:10px; color:#6c757d">Confidence:</div>
+                                    <div style="font-weight:700; margin-top:6px; font-size:18px" id="confidenceScore">—%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h4 style="margin:0 0 6px">SEVERITY (CURB-65)</h4>
+                            <div style="height:1px; background:#e9ecef; margin:8px 0 12px"></div>
+                            <div style="font-size:14px">Score: <strong id="resultCurb">—</strong></div>
+                            <div style="margin-top:8px; color:var(--danger); font-weight:700" id="riskLevel">Risk: —</div>
+                            <div style="margin-top:8px; color:#6c757d" id="action">Action: —</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:22px; padding:18px 22px;">
+                    <h4 style="margin:0 0 6px">DOCTOR'S ANNOTATIONS</h4>
+                    <p class="small-hint" style="margin-bottom:12px">Add clinical notes, diagnosis confirmation, and treatment recommendations</p>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px">
+                        <input class="form-row" placeholder="Doctor Name" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa">
+                        <input class="form-row" placeholder="Final Diagnosis" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa">
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Clinical Notes</label>
+                        <textarea placeholder="Enter detailed clinical observations, symptoms, and examination findings..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Treatment Plan</label>
+                        <textarea placeholder="Prescribed medications, dosages, and treatment duration..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Follow-up Instructions</label>
+                        <textarea placeholder="Next appointment, monitoring requirements, warning signs to watch for..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px">
+                        <button class="btn btn-outline">Save Annotations</button>
+                    </div>
+
+                    <div style="height:1px; background:#e9ecef; margin:16px 0"></div>
+
+                    <div style="display:flex; justify-content:space-between; gap:12px; margin-top:16px">
+                        <a class="btn btn-primary" href="new_analysis.html" id="newDiagnosis">New Diagnosis</a>
+                        <a class="btn btn-outline" href="#" id="downloadReport"><img src="{{ url_for('static', filename='images/download.png') }}" alt="Download" style="width:18px; height:18px; margin-right:6px; vertical-align:middle"> Download Report</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Populate results from sessionStorage (filled by the API response)
+        document.addEventListener('DOMContentLoaded', function(){
+            try{
+                const resultStr = sessionStorage.getItem('analysis_result');
+                if(!resultStr){
+                    document.getElementById('diagnosisStatus').textContent = 'No analysis data found';
+                    return;
+                }
+
+                const result = JSON.parse(resultStr);
+
+                // Update image
+                if(result.image_data){
+                    document.getElementById('resultXray').src = result.image_data;
+                }
+
+                // Update patient meta
+                const patientMeta = `Patient: ${result.patient_name} • Age: ${result.age} • ID: ${result.medical_id}`;
+                document.getElementById('patientMeta').textContent = patientMeta;
+
+                // Update AI diagnosis
+                const status = result.pneumonia_detected ? 'PNEUMONIA' : 'NORMAL';
+                document.getElementById('diagnosisStatus').textContent = status;
+                document.getElementById('confidenceScore').textContent = result.confidence.toFixed(1) + '%';
+
+                // Update CURB-65
+                document.getElementById('resultCurb').textContent = result.curb_score.score;
+                const riskColor = result.curb_score.risk === 'Severe' ? '#dc3545' : (result.curb_score.risk === 'Moderate' ? '#ff9800' : '#28a745');
+                document.getElementById('riskLevel').textContent = 'Risk: ' + result.curb_score.risk;
+                document.getElementById('riskLevel').style.color = riskColor;
+
+                // Update action
+                const action = result.curb_score.score >= 3 ? 'Hospitalize' : (result.curb_score.score >= 2 ? 'Monitor' : 'Outpatient care');
+                document.getElementById('action').textContent = 'Action: ' + action;
+
+            }catch(err){
+                console.warn('Unable to load analysis result:', err);
+                document.getElementById('diagnosisStatus').textContent = 'Error loading data';
+            }
+        });
+
+        // Download report placeholder
+        document.getElementById('downloadReport')?.addEventListener('click', function(e){
+            e.preventDefault();
+            
+            try {
+                const resultStr = sessionStorage.getItem('analysis_result');
+                if (!resultStr) {
+                    alert('No analysis data found. Please complete an analysis first.');
+                    return;
+                }
+                
+                const result = JSON.parse(resultStr);
+                
+                // Capture doctor's annotations
+                const annotations = {
+                    doctorName: document.querySelector('input[placeholder="Doctor Name"]')?.value || '',
+                    finalDiagnosis: document.querySelector('input[placeholder="Final Diagnosis"]')?.value || '',
+                    clinicalNotes: document.querySelector('textarea')?.value || '',
+                    treatmentPlan: document.querySelectorAll('textarea')[1]?.value || '',
+                    followUpInstructions: document.querySelectorAll('textarea')[2]?.value || ''
+                };
+                
+                // Call the PDF generation endpoint
+                fetch('/api/download-report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patient_name: result.patient_name,
+                        medical_id: result.medical_id,
+                        age: result.age,
+                        pneumonia_detected: result.pneumonia_detected,
+                        confidence: result.confidence,
+                        curb_score: result.curb_score,
+                        annotations: annotations
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to generate PDF');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // Create a temporary URL for the blob
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `PneumoDetect_Report_${result.medical_id}_${new Date().getTime()}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Error downloading report:', error);
+                    alert('Failed to download report. Please try again.');
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error downloading report: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

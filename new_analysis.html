@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Analysis - PneumoDetect AI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="dashboard.html"><span class="nav-icon"><img src="images/dashboard.png" alt="Dashboard"></span>Dashboard</a>
+                <a href="new_analysis.html" class="active"><span class="nav-icon"><img src="images/upload.png" alt="New Analysis"></span>New Analysis</a>
+                <a href="reports.html"><span class="nav-icon"><img src="images/history.png" alt="Patient History"></span>Patient History</a>
+                <a href="alerts.html"><span class="nav-icon"><img src="images/alerts.png" alt="Alerts"></span>Alerts</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar">Dr</div>
+                <div class="user-details">
+                    <h3>Dr. Sarah Johnson</h3>
+                    <p>johannesric03@gmail.com</p>
+                </div>
+            </div>
+            <button class="logout-btn">Logout</button>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-header">
+                <h1>New Analysis</h1>
+                <p>Upload and analyze chest X-ray images for pneumonia detection</p>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="stepper" aria-hidden="false">
+                    <div class="step active">
+                        <div class="circle">1</div>
+                        <div class="label">Patient Info</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step">
+                        <div class="circle">2</div>
+                        <div class="label">Upload X-Ray</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step">
+                        <div class="circle">3</div>
+                        <div class="label">Results</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Patient Information</h3>
+                    <p>Enter patient details</p>
+
+                    <div class="form-row">
+                        <label for="patient-name">Patient Name</label>
+                        <input id="patient-name" placeholder="Enter patient name">
+                    </div>
+
+                    <div class="form-row">
+                        <label for="age">Age</label>
+                        <input id="age" placeholder="Enter age">
+                    </div>
+
+                    <div class="form-row">
+                        <label for="medical-id">Medical ID</label>
+                        <input id="medical-id" placeholder="Enter medical ID">
+                    </div>
+
+                    <div class="cta">
+                        <a class="btn btn-primary" href="new_analysis_upload.html">Continue to X-Ray Upload</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

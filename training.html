@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Training Hub</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <h2>MediScan AI</h2>
+            <nav class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="training.html" class="active">Training</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <h3>Radiology Training Hub</h3>
+            <p style="margin-bottom: 20px;">Review common pneumonia patterns identified by the AI.</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+                <div class="card">
+                    <img src="https://via.placeholder.com/300x200.png?text=Lobar+Pneumonia" style="width: 100%; border-radius: 5px; margin-bottom: 10px;">
+                    <h4>Lobar Pneumonia</h4>
+                    <p style="font-size: 0.9rem; color: #666;">Characterized by consolidation of a whole lobe.</p>
+                    <button class="btn btn-outline" style="width: 100%; margin-top: 10px;">Take Quiz</button>
+                </div>
+
+                <div class="card">
+                    <img src="https://via.placeholder.com/300x200.png?text=Viral+Pneumonia" style="width: 100%; border-radius: 5px; margin-bottom: 10px;">
+                    <h4>Viral Pneumonia</h4>
+                    <p style="font-size: 0.9rem; color: #666;">Often presents as diffuse interstitial patterns.</p>
+                    <button class="btn btn-outline" style="width: 100%; margin-top: 10px;">Take Quiz</button>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

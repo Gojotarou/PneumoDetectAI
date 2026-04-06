@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CURB-65 Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <h2>MediScan AI</h2>
+            <nav class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="curb65.html" class="active">CURB-65 Calculator</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+                <h3>CURB-65 Pneumonia Severity Score</h3>
+                <p style="color: #666; margin-bottom: 25px;">Patient: P-1024 (Auto-filled)</p>
+
+                <form>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label><strong>C</strong>onfusion?</label>
+                            <select class="form-control">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><strong>U</strong>rea > 7 mmol/L?</label>
+                            <select class="form-control">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label><strong>R</strong>espiratory Rate ≥ 30/min?</label>
+                            <select class="form-control">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label><strong>B</strong>lood Pressure (SBP < 90 or DBP ≤ 60)?</label>
+                            <select class="form-control">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Age ≥ <strong>65</strong>?</label>
+                            <select class="form-control">
+                                <option value="1" selected>Yes (Patient is 72)</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px;">
+                        <h4>Calculated Score: <span style="font-size: 1.5rem; color: var(--primary-color);">2</span></h4>
+                        <p><strong>Risk Group 2:</strong> Moderate risk. Consider hospital-supervised treatment.</p>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button type="button" class="btn btn-primary">Save to Report</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

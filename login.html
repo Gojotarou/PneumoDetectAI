@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediScan AI - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <h2 style="color: var(--primary-color);">PneumoDetect AI</h2>
+        <p style="margin-bottom: 20px; color: #666;">Clinician Access Portal</p>
+        
+        <form action="dashboard.html">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" class="form-control" placeholder="dr.smith@hospital.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            
+            <p style="color: var(--danger); font-size: 0.9rem; margin-bottom: 15px; display: none;">Invalid credentials. Please try again.</p>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Secure Login</button>
+        </form>
+        
+        <div style="margin-top: 15px;">
+            <a href="#" style="color: var(--accent-color); font-size: 0.9rem; text-decoration: none;">Forgot Password?</a>
+        </div>
+    </div>
+</body>
+</html>

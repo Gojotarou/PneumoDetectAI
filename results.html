@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Prediction Result — PneumoDetect</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Page-specific helpers for Results layout */
+        .results-grid { display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start; max-width:1100px }
+        .xray-card { padding:18px; display:flex; flex-direction:column; gap:16px }
+        .xray-frame { background:#fff; border-radius:12px; padding:18px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.04) }
+        .xray-frame img { max-width:520px; width:100%; border-radius:8px }
+        .ai-card { display:flex; flex-direction:column; gap:12px }
+        .ai-card .section { background:#fff; border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04) }
+        .ai-status { font-size:18px; font-weight:700; color:var(--danger) }
+        .meta-small { font-size:13px; color:var(--text-light) }
+        .actions-row { display:flex; gap:12px; margin-top:10px }
+        .annotations { margin-top:22px }
+        .annotations textarea { width:100%; min-height:120px; padding:12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa }
+        .save-annotations { float:right }
+        @media (max-width:900px){ .results-grid{ grid-template-columns: 1fr; } .xray-frame img{ max-width:100% } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="dashboard.html"><span class="nav-icon"><img src="images/dashboard.png" alt="Dashboard"></span>Dashboard</a>
+                <a href="new_analysis.html" class="active"><span class="nav-icon"><img src="images/upload.png" alt="New Analysis"></span>New Analysis</a>
+                <a href="report.html"><span class="nav-icon"><img src="images/history.png" alt="Patient History"></span>Patient History</a>
+                <a href="alerts.html"><span class="nav-icon"><img src="images/alerts.png" alt="Alerts"></span>Alerts</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar">Dr</div>
+                <div class="user-details">
+                    <h3>Dr. Sarah Johnson</h3>
+                    <p>johannesric03@gmail.com</p>
+                </div>
+            </div>
+            <button class="logout-btn">Logout</button>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-header">
+                <h1>New Analysis</h1>
+                <p>Upload and analyze chest X-ray images for pneumonia detection</p>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="stepper" aria-hidden="false">
+                    <div class="step done">
+                        <div class="circle">1</div>
+                        <div class="label">Patient Info</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step done">
+                        <div class="circle">2</div>
+                        <div class="label">Upload X-Ray</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step active">
+                        <div class="circle">3</div>
+                        <div class="label">Results</div>
+                    </div>
+                </div>
+
+                <h2 style="margin:0 0 8px">Prediction Result</h2>
+                <div class="meta-small" style="margin-bottom:18px">Patient: Chai Chan Sin Jin • Age: 24 • ID: 829932</div>
+
+                <div class="results-grid">
+                    <div class="xray-card">
+                        <div class="section xray-frame">
+                            <img id="resultXray" src="https://via.placeholder.com/520x520.png?text=Chest+X-Ray" alt="Patient X-ray">
+                        </div>
+
+                        <div style="display:flex; gap:12px;">
+                            <a class="btn btn-outline" href="#" id="downloadReport">⬇ Download Report</a>
+                            <a class="btn btn-primary" href="new_analysis.html" id="newDiagnosis">⚡ New Diagnosis</a>
+                        </div>
+                    </div>
+
+                    <div class="ai-card">
+                        <div class="section">
+                            <h4 style="margin:0 0 6px">AI DIAGNOSIS</h4>
+                            <div style="height:1px; background:#e9ecef; margin:8px 0 12px"></div>
+                            <div style="display:flex; justify-content:space-between; align-items:center">
+                                <div>
+                                    <div style="font-size:13px; color:#95a5a6">Status:</div>
+                                    <div class="ai-status" style="margin-top:6px">PNEUMONIA</div>
+                                    <div style="margin-top:10px; color:#6c757d">Confidence:</div>
+                                    <div style="font-weight:700; margin-top:6px; font-size:18px">94%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h4 style="margin:0 0 6px">SEVERITY (CURB-65)</h4>
+                            <div style="height:1px; background:#e9ecef; margin:8px 0 12px"></div>
+                            <div style="font-size:14px">Score: <strong id="resultCurb">3</strong></div>
+                            <div style="margin-top:8px; color:var(--danger); font-weight:700">Risk: SEVERE</div>
+                            <div style="margin-top:8px; color:#6c757d">Action: Hospitalize</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="annotations card" style="margin-top:22px; padding:18px 22px;">
+                    <h4 style="margin:0 0 6px">DOCTOR'S ANNOTATIONS</h4>
+                    <p class="small-hint" style="margin-bottom:12px">Add clinical notes, diagnosis confirmation, and treatment recommendations</p>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px">
+                        <input class="form-row" placeholder="Doctor Name" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec">
+                        <input class="form-row" placeholder="Final Diagnosis" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec">
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Clinical Notes</label>
+                        <textarea placeholder="Enter detailed clinical observations, symptoms, and examination findings..."></textarea>
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Treatment Plan</label>
+                        <textarea placeholder="Prescribed medications, dosages, and treatment duration..."></textarea>
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Follow-up Instructions</label>
+                        <textarea placeholder="Next appointment, monitoring requirements, warning signs to watch for..."></textarea>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px">
+                        <button class="btn btn-outline">Save Annotations</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleHeatmap() { document.getElementById('resultXray').parentElement.classList.toggle('show-heatmap'); }
+
+        // download report placeholder
+        document.getElementById('downloadReport')?.addEventListener('click', function(e){ e.preventDefault(); alert('Download report (placeholder)'); });
+
+        // new diagnosis shortcut
+        document.getElementById('newDiagnosis')?.addEventListener('click', function(e){ /* navigates via link */ });
+    </script>
+</body>
+</html>

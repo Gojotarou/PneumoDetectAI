@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PneumoDetect AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <h2>PneumoDetect</h2>
+        <p style="color: #95a5a6; margin-bottom: 30px;">AI-Powered Pneumonia Detection</p>
+        
+        <form>
+            <div class="form-group">
+                <label>Email</label>
+                <input class="form-control" type="email" placeholder="Enter your email">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input class="form-control" type="password" placeholder="Enter password">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px;">Login</button>
+        </form>
+    </div>
+</body>
+</html>
