@@ -266,7 +266,18 @@
                         // Navigate to results (Step 3)
                         window.location.href = '{{ url_for("results") }}';
                     } else {
-                        alert('Analysis failed: ' + (result.error || 'Unknown error'));
+                        // Enhanced error handling for duplicate medical IDs
+                        let errorMsg = result.error || 'Unknown error';
+                        
+                        if(response.status === 409 && result.existing_patient) {
+                            // Duplicate patient ID detected
+                            const existing = result.existing_patient;
+                            errorMsg = `${errorMsg}\n\nExisting Patient Information:\n• Name: ${existing.name}\n• Age: ${existing.age}\n\n⚠️ Please use a different Medical ID to create a new patient record.`;
+                        } else if(result.details) {
+                            errorMsg += `\n\n${result.details}`;
+                        }
+                        
+                        alert(errorMsg);
                         document.getElementById('loadingMsg').style.display = 'none';
                         analyzeBtn.disabled = false;
                     }
@@ -334,9 +345,22 @@
 
                 let risk = '—';
                 let color = '#f8f9fa';
-                if(score <= 1){ risk = 'Low'; color = '#e9f7ef'; }
-                else if(score === 2){ risk = 'Moderate'; color = '#fff7e6'; }
-                else { risk = 'High'; color = '#ffecec'; }
+                if(score <= 1){ 
+                    risk = 'Low'; 
+                    color = '#e9f7ef';  // Green
+                }
+                else if(score === 2){ 
+                    risk = 'Moderate'; 
+                    color = '#fff7e6';  // Yellow
+                }
+                else if(score === 3){
+                    risk = 'High';
+                    color = '#ffe6e6';  // Light Red
+                }
+                else {  // 4-5
+                    risk = 'Very High';
+                    color = '#ffcccc';  // Dark Red
+                }
 
                 scoreEl.textContent = `Score: ${score}  •  Risk: ${risk}`;
                 scoreEl.style.background = color;

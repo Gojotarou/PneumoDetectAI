@@ -1044,6 +1044,48 @@ def get_alert_case(alert_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/check-patient-id', methods=['POST'])
+@login_required
+def check_patient_id():
+    """
+    Check if a medical_id already exists in the database (Step 1 validation)
+    Returns whether the ID exists and patient details if it does
+    """
+    try:
+        data = request.get_json()
+        medical_id = data.get('medical_id', '').strip()
+        
+        if not medical_id:
+            return jsonify({'success': False, 'error': 'Medical ID required'}), 400
+        
+        # Check if patient with this medical_id exists
+        existing_patient = Patient.query.filter_by(medical_id=medical_id).first()
+        
+        if existing_patient:
+            # Patient exists - return error with details
+            return jsonify({
+                'success': False,
+                'exists': True,
+                'error': f'Patient ID "{medical_id}" already exists',
+                'existing_patient': {
+                    'id': existing_patient.id,
+                    'name': existing_patient.name,
+                    'age': existing_patient.age,
+                    'medical_id': existing_patient.medical_id
+                }
+            }), 409
+        
+        # Patient does not exist - safe to proceed
+        return jsonify({
+            'success': True,
+            'exists': False,
+            'message': 'Medical ID is available'
+        }), 200
+    
+    except Exception as e:
+        print(f"Error checking patient ID: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @app.route('/api/analyze', methods=['POST'])
 @login_required
@@ -1084,16 +1126,29 @@ def analyze_xray():
         patient_name = request.form.get('patient_name', 'Unknown')
         medical_id = request.form.get('medical_id', f"AUTO-{int(datetime.now().timestamp())}")
         
-        # Get or create patient
-        patient = Patient.query.filter_by(medical_id=medical_id).first()
-        if not patient:
-            patient = Patient(
-                medical_id=medical_id,
-                name=patient_name,
-                age=age
-            )
-            db.session.add(patient)
-            db.session.commit()
+        # VALIDATION: Check if medical_id already exists
+        existing_patient = Patient.query.filter_by(medical_id=medical_id).first()
+        if existing_patient:
+            return jsonify({
+                'success': False,
+                'error': f'❌ Patient ID "{medical_id}" already exists in the system!',
+                'details': f'Patient: {existing_patient.name} (Age: {existing_patient.age})',
+                'existing_patient': {
+                    'id': existing_patient.id,
+                    'name': existing_patient.name,
+                    'age': existing_patient.age,
+                    'medical_id': existing_patient.medical_id
+                }
+            }), 409
+        
+        # Create new patient
+        patient = Patient(
+            medical_id=medical_id,
+            name=patient_name,
+            age=age
+        )
+        db.session.add(patient)
+        db.session.commit()
         
         # Run AI model prediction
         prediction_result = run_pneumonia_detection(
@@ -1555,13 +1610,23 @@ def compute_curb65(age, confusion, urea, respiratory, sbp, dbp):
 
 
 def get_risk_level(curb_score):
-    """Map CURB-65 score to risk level"""
+    """
+    Map CURB-65 score to hospital-grade risk level (BTS Standard)
+    
+    CURB-65 Risk Stratification:
+    - 0-1: Low risk (outpatient management)
+    - 2: Moderate risk (consider hospital admission)
+    - 3: High risk (hospital admission recommended)
+    - 4-5: Very High risk (ICU consideration)
+    """
     if curb_score <= 1:
         return 'Low'
     elif curb_score == 2:
         return 'Moderate'
-    else:
-        return 'Severe'
+    elif curb_score == 3:
+        return 'High'
+    else:  # 4-5
+        return 'Very High'
 
 
 def run_pneumonia_detection(image_data, age, confusion, urea, respiratory, sbp, dbp):

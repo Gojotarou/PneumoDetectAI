@@ -116,7 +116,7 @@
                             <h4 style="margin:0 0 6px">SEVERITY (CURB-65)</h4>
                             <div style="height:1px; background:#e9ecef; margin:8px 0 12px"></div>
                             <div style="font-size:14px; display:flex; align-items:center;">
-                                Score: <strong id="resultCurb">—</strong>
+                                Score: <strong id="resultCurb" style="margin-left: 4px;">—</strong>
                                 <span class="info-icon" id="curbInfoBtn" title="What does this CURB-65 score mean?">i</span>
                             </div>
                             <div style="margin-top:8px; color:var(--danger); font-weight:700" id="riskLevel">Risk: —</div>
@@ -327,12 +327,29 @@
 
                 // Update CURB-65
                 document.getElementById('resultCurb').textContent = result.curb_score.score;
-                const riskColor = result.curb_score.risk === 'Severe' ? '#dc3545' : (result.curb_score.risk === 'Moderate' ? '#ff9800' : '#28a745');
+                
+                // Hospital-grade color coding for CURB-65 risk
+                let riskColor = '#28a745';  // Green - Low
+                if(result.curb_score.risk === 'Moderate') {
+                    riskColor = '#ff9800';  // Orange - Moderate
+                } else if(result.curb_score.risk === 'High') {
+                    riskColor = '#dc3545';  // Red - High
+                } else if(result.curb_score.risk === 'Very High') {
+                    riskColor = '#c82333';  // Dark Red - Very High
+                }
+                
                 document.getElementById('riskLevel').textContent = 'Risk: ' + result.curb_score.risk;
                 document.getElementById('riskLevel').style.color = riskColor;
 
-                // Update action
-                const action = result.curb_score.score >= 3 ? 'Hospitalize' : (result.curb_score.score >= 2 ? 'Monitor' : 'Outpatient care');
+                // Update action (based on hospital-grade CURB-65 recommendations)
+                let action = 'Outpatient care';  // 0-1
+                if(result.curb_score.score === 2) {
+                    action = 'Consider hospital admission';
+                } else if(result.curb_score.score === 3) {
+                    action = 'Hospital admission recommended';
+                } else if(result.curb_score.score >= 4) {
+                    action = 'ICU consideration recommended';
+                }
                 document.getElementById('action').textContent = 'Action: ' + action;
 
                 // Show Send Alert button only if pneumonia detected

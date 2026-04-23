@@ -124,7 +124,6 @@ class Analysis(db.Model):
     # Image storage
     image_filename = db.Column(db.String(255))  # name of saved image file
     image_base64 = db.Column(db.LargeBinary)  # Store binary image data directly (more efficient than base64)
-    gradcam_image_path = db.Column(db.String(255))  # Path to stored Grad-CAM heatmap PNG
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

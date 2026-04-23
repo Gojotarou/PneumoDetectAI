@@ -82,7 +82,7 @@
                     </div>
 
     <script>
-        document.getElementById('continueLink').addEventListener('click', function(e){
+        document.getElementById('continueLink').addEventListener('click', async function(e){
             e.preventDefault();
             const name = document.getElementById('patient-name').value.trim();
             const age = document.getElementById('age').value.trim();
@@ -93,13 +93,40 @@
                 return;
             }
 
-            // Store patient info in sessionStorage
-            sessionStorage.setItem('patient_name', name);
-            sessionStorage.setItem('patient_age', age);
-            sessionStorage.setItem('patient_medical_id', medicalId);
+            // ✅ STEP 1 VALIDATION: Check if medical_id already exists
+            try {
+                const checkResponse = await fetch('/api/check-patient-id', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        medical_id: medicalId
+                    })
+                });
 
-            // Navigate to step 2
-            window.location.href = '{{ url_for("new_analysis_upload") }}';
+                const checkResult = await checkResponse.json();
+
+                if(!checkResult.success && checkResult.exists) {
+                    // Medical ID already exists - show error with existing patient info
+                    const existing = checkResult.existing_patient;
+                    alert(`❌ Patient ID "${medicalId}" already exists in the system!\n\nExisting Patient:\n• Name: ${existing.name}\n• Age: ${existing.age}\n\n⚠️ Please use a different Medical ID to create a new patient record.`);
+                    return;
+                }
+
+                // ✅ Validation passed - safe to proceed
+                // Store patient info in sessionStorage
+                sessionStorage.setItem('patient_name', name);
+                sessionStorage.setItem('patient_age', age);
+                sessionStorage.setItem('patient_medical_id', medicalId);
+
+                // Navigate to step 2
+                window.location.href = '{{ url_for("new_analysis_upload") }}';
+
+            } catch(err) {
+                console.error('Validation error:', err);
+                alert('Error validating patient ID. Please try again.');
+            }
         });
 
         // Load current user information
