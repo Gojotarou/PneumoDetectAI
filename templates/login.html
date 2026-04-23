@@ -6,34 +6,38 @@
     <title>Login - PneumoDetect AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center }
-        .login-wrapper { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center }
-        .login-container { background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 48px 40px; max-width: 420px; width: 100%; margin: 20px }
-        .login-container h1 { font-size: 28px; color: #2c3e50; margin: 0 0 8px; text-align: center; font-weight: 700 }
-        .login-container .subtitle { color: #95a5a6; text-align: center; margin-bottom: 32px; font-size: 14px }
-        .form-group { margin-bottom: 20px }
-        .form-group label { display: block; font-weight: 600; color: #2c3e50; margin-bottom: 8px; font-size: 14px }
-        .form-group input { width: 100%; padding: 12px 14px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 14px; font-family: inherit; transition: border-color 0.2s }
-        .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) }
-        .btn-login { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 8px }
-        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3) }
-        .btn-login:active { transform: translateY(0) }
-        .btn-login:disabled { opacity: 0.6; cursor: not-allowed }
-        .error-message { color: #dc3545; font-size: 13px; margin-top: 8px; text-align: center; display: none }
-        .success-message { color: #28a745; font-size: 13px; margin-top: 8px; text-align: center; display: none }
-        .demo-credentials { background: #f8f9fa; border-left: 4px solid #667eea; padding: 16px; border-radius: 8px; margin-top: 24px; font-size: 13px }
-        .demo-credentials h4 { margin: 0 0 12px; color: #2c3e50; font-weight: 600 }
-        .demo-credentials p { margin: 6px 0; color: #6c757d }
-        .demo-credentials code { background: white; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #764ba2 }
+        * { margin: 0; padding: 0; box-sizing: border-box }
+        body { background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #075985 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
+        .login-wrapper { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px }
+        .login-container { background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(2, 132, 199, 0.3), 0 0 1px rgba(0,0,0,0.1); padding: 60px 48px; max-width: 450px; width: 100%; position: relative; overflow: hidden }
+        .login-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #0284c7, #0369a1, #075985) }
+        .login-container h1 { font-size: 32px; color: #0c4a6e; margin: 0 0 8px; text-align: center; font-weight: 800; letter-spacing: -0.5px }
+        .login-container .subtitle { color: #0369a1; text-align: center; margin-bottom: 40px; font-size: 14px; font-weight: 500; letter-spacing: 0.3px }
+        .form-group { margin-bottom: 24px }
+        .form-group label { display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 10px; font-size: 14px; letter-spacing: 0.2px }
+        .form-group input { width: 100%; padding: 14px 16px; border: 2px solid #e0f2fe; border-radius: 10px; font-size: 14px; font-family: inherit; transition: all 0.3s ease; background: #f8fafc }
+        .form-group input::placeholder { color: #94a3b8 }
+        .form-group input:focus { outline: none; border-color: #0284c7; background: white; box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.08) }
+        .btn-login { width: 100%; padding: 14px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-top: 8px; letter-spacing: 0.5px; box-shadow: 0 8px 16px rgba(2, 132, 199, 0.25) }
+        .btn-login:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(2, 132, 199, 0.35) }
+        .btn-login:active { transform: translateY(-1px) }
+        .btn-login:disabled { opacity: 0.7; cursor: not-allowed; transform: none }
+        .error-message { color: #dc2626; font-size: 13px; margin-top: 12px; text-align: center; display: none; background: #fee2e2; padding: 12px; border-radius: 8px; border-left: 4px solid #dc2626; font-weight: 500 }
+        .success-message { color: #059669; font-size: 13px; margin-top: 12px; text-align: center; display: none; background: #d1fae5; padding: 12px; border-radius: 8px; border-left: 4px solid #059669; font-weight: 500 }
+        .demo-credentials { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0284c7; padding: 20px; border-radius: 10px; margin-top: 32px; font-size: 13px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1) }
+        .demo-credentials h4 { margin: 0 0 14px; color: #0c4a6e; font-weight: 700; font-size: 14px; letter-spacing: 0.3px }
+        .demo-credentials p { margin: 8px 0; color: #0369a1; line-height: 1.6 }
+        .demo-credentials code { background: white; padding: 6px 10px; border-radius: 6px; font-family: 'Courier New', monospace; color: #0284c7; font-weight: 600; border: 1px solid #e0f2fe }
         .loading { display: none; text-align: center }
-        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite }
+        .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #e0f2fe; border-top: 3px solid #0284c7; border-radius: 50%; animation: spin 1s linear infinite }
         @keyframes spin { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
+        .loading p { margin-top: 12px; color: #0284c7; font-weight: 600; font-size: 14px }
     </style>
 </head>
 <body>
     <div class="login-wrapper">
         <div class="login-container">
-            <h1>PneumoDetect</h1>
+            <h1>PneumoDetect AI</h1>
             <p class="subtitle">AI-Powered Pneumonia Detection System</p>
             
             <form id="loginForm">

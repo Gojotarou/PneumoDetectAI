@@ -237,28 +237,39 @@
             }
         }
 
+        function getStatIcon(type) {
+            const icons = {
+                'analyses': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>',
+                'patients': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
+                'pending': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+                'alerts': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+                'uploads': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>'
+            };
+            return icons[type] || '';
+        }
+
         function renderStats(data) {
             const statsGrid = document.getElementById('statsGrid');
             const stats = data.stats;
             
             const statCards = {
                 'admin': [
-                    { title: 'Total Analyses', value: stats.total_analyses, icon: '📊', color: 'blue' },
-                    { title: 'Patients', value: stats.total_patients, icon: '👥', color: 'green' },
-                    { title: 'Pending Reviews', value: stats.pending_reviews, icon: '⏳', color: 'orange' },
-                    { title: 'Critical Alerts', value: stats.critical_alerts, icon: '⚠️', color: 'red' }
+                    { title: 'Total Analyses', value: stats.total_analyses, iconType: 'analyses', color: 'blue' },
+                    { title: 'Patients', value: stats.total_patients, iconType: 'patients', color: 'green' },
+                    { title: 'Pending Reviews', value: stats.pending_reviews, iconType: 'pending', color: 'orange' },
+                    { title: 'Critical Alerts', value: stats.critical_alerts, iconType: 'alerts', color: 'red' }
                 ],
                 'doctor': [
-                    { title: 'Assigned Patients', value: stats.assigned_patients, icon: '👥', color: 'green' },
-                    { title: 'My Analyses', value: stats.my_analyses, icon: '📊', color: 'blue' },
-                    { title: 'Pending Reviews', value: stats.pending_reviews, icon: '⏳', color: 'orange' },
-                    { title: 'Critical Alerts', value: stats.critical_alerts, icon: '⚠️', color: 'red' }
+                    { title: 'Assigned Patients', value: stats.assigned_patients, iconType: 'patients', color: 'green' },
+                    { title: 'My Analyses', value: stats.my_analyses, iconType: 'analyses', color: 'blue' },
+                    { title: 'Pending Reviews', value: stats.pending_reviews, iconType: 'pending', color: 'orange' },
+                    { title: 'Critical Alerts', value: stats.critical_alerts, iconType: 'alerts', color: 'red' }
                 ],
                 'nurse': [
-                    { title: 'My Uploads', value: stats.my_uploads, icon: '📤', color: 'blue' },
-                    { title: 'Assigned Patients', value: stats.assigned_patients, icon: '👥', color: 'green' },
-                    { title: 'Pending Analysis', value: stats.pending_analysis, icon: '⏳', color: 'orange' },
-                    { title: 'Critical Alerts', value: stats.critical_alerts, icon: '⚠️', color: 'red' }
+                    { title: 'My Uploads', value: stats.my_uploads, iconType: 'uploads', color: 'blue' },
+                    { title: 'Assigned Patients', value: stats.assigned_patients, iconType: 'patients', color: 'green' },
+                    { title: 'Pending Analysis', value: stats.pending_analysis, iconType: 'pending', color: 'orange' },
+                    { title: 'Critical Alerts', value: stats.critical_alerts, iconType: 'alerts', color: 'red' }
                 ]
             };
             
@@ -267,7 +278,7 @@
                 <div class="stat-card">
                     <div class="stat-header">
                         <span class="stat-title">${card.title}</span>
-                        <div class="stat-icon ${card.color}">${card.icon}</div>
+                        <div class="stat-icon ${card.color}">${getStatIcon(card.iconType)}</div>
                     </div>
                     <div class="stat-value">${card.value}</div>
                 </div>

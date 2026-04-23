@@ -15,12 +15,14 @@ import numpy as np
 from PIL import Image
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image as keras_image
+import tensorflow as tf
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
+from sqlalchemy import case
 from models import db, Patient, Analysis, Annotation, User, PatientStaff, Notification, init_db
 from dotenv import load_dotenv
 
@@ -91,6 +93,7 @@ def role_required(*allowed_roles):
         return decorated_function
     return decorator
 
+
 # =====================================================================
 # LOAD CNN MODEL FOR PNEUMONIA DETECTION
 # =====================================================================
@@ -107,9 +110,7 @@ except Exception as e:
 
 @app.route('/login.html', methods=['GET'])
 def login_page():
-    """Serve login page"""
-    if get_current_user():
-        return redirect(url_for('dashboard'))
+    """Serve login page - always show fresh login (don't auto-redirect if logged in)"""
     return render_template('login.html')
 
 @app.route('/api/login', methods=['POST'])
@@ -291,6 +292,11 @@ def dashboard_data():
 # =====================================================================
 
 @app.route('/')
+def root():
+    """Root route - always clear session and redirect to login for fresh start"""
+    session.clear()  # Clear any existing session
+    return redirect(url_for('login_page'))
+
 @app.route('/dashboard.html')
 @login_required
 def dashboard():
@@ -472,11 +478,21 @@ def delete_analysis(analysis_id):
 
 @app.route('/api/users', methods=['GET'])
 @login_required
-@role_required('admin')
 def get_all_users():
-    """Get all staff users (admin only) for assignment dropdown"""
+    """Get staff users - with optional role filtering (admin only for general access)"""
     try:
-        users = User.query.all()
+        # Get role filter from query params
+        role_filter = request.args.get('role')
+        
+        if role_filter:
+            # Filter by role (nurses and doctors can see doctors for alerts)
+            users = User.query.filter_by(role=role_filter).all()
+        else:
+            # Admin only for all users without filter
+            user = get_current_user()
+            if user.role != 'admin':
+                return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+            users = User.query.all()
         
         user_list = []
         for user in users:
@@ -797,6 +813,237 @@ def dismiss_notification(notification_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# HOSPITAL-GRADE ALERT SYSTEM (Phase 7)
+@app.route('/api/send-alert', methods=['POST'])
+@login_required
+def send_alert():
+    """Send hospital-grade alert from nurse/doctor to doctor (auto-calculates urgency)"""
+    try:
+        user = get_current_user()
+        data = request.get_json()
+        
+        analysis_id = data.get('analysis_id')
+        recipient_id = data.get('recipient_id')  # Doctor to alert
+        patient_id = data.get('patient_id')
+        confidence = data.get('confidence')  # AI confidence (0-100)
+        curb_score = data.get('curb_score')  # Severity score
+        
+        if not all([analysis_id, recipient_id, patient_id, confidence is not None]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # Calculate urgency level based on hospital standards
+        if confidence > 85 and curb_score >= 3:
+            urgency_level = 'CRITICAL'  # 🔴 Immediate action (>85% confidence + high CURB)
+        elif confidence > 70 or curb_score >= 3:
+            urgency_level = 'HIGH'  # 🟠 Review needed soon
+        elif confidence > 50 or curb_score == 2:
+            urgency_level = 'MODERATE'  # 🟡 Routine review
+        else:
+            urgency_level = 'LOW'  # 🟢 Informational
+        
+        # Get patient info
+        patient = Patient.query.get(patient_id)
+        if not patient:
+            return jsonify({'success': False, 'error': 'Patient not found'}), 404
+        
+        # Create alert notification
+        message = f"Alert: Patient {patient.name} ({patient.medical_id}) - Pneumonia Detected ({confidence:.1f}% confidence, CURB-65: {curb_score})"
+        
+        alert = Notification(
+            recipient_id=recipient_id,
+            sender_id=user.id,
+            patient_id=patient_id,
+            analysis_id=analysis_id,
+            notification_type='patient_alert',
+            message=message,
+            urgency_level=urgency_level
+        )
+        
+        db.session.add(alert)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Alert sent ({urgency_level})',
+            'notification': alert.to_dict()
+        }), 201
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error sending alert: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notifications/<int:notification_id>/acknowledge', methods=['POST'])
+@login_required
+def acknowledge_alert(notification_id):
+    """Doctor acknowledges alert (confirms they've seen it)"""
+    try:
+        user = get_current_user()
+        notification = Notification.query.get(notification_id)
+        
+        if not notification:
+            return jsonify({'success': False, 'error': 'Notification not found'}), 404
+        
+        # Only recipient (doctor) can acknowledge
+        if notification.recipient_id != user.id:
+            return jsonify({'success': False, 'error': 'Only recipient can acknowledge'}), 403
+        
+        notification.is_acknowledged = True
+        notification.acknowledged_at = datetime.utcnow()
+        notification.is_read = True
+        notification.read_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Alert acknowledged',
+            'notification': notification.to_dict()
+        }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error acknowledging alert: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/alerts', methods=['GET'])
+@login_required
+def get_alerts():
+    """Get alerts for current user - with optional filter for pending/acknowledged"""
+    try:
+        user = get_current_user()
+        
+        # Get filter from query params (default: pending)
+        filter_type = request.args.get('filter', 'pending')  # 'pending', 'acknowledged', or 'all'
+        
+        query = Notification.query.filter(
+            Notification.recipient_id == user.id,
+            Notification.notification_type == 'patient_alert',
+            Notification.is_dismissed == False
+        )
+        
+        # Apply filter
+        if filter_type == 'pending':
+            query = query.filter(Notification.is_acknowledged == False)
+        elif filter_type == 'acknowledged':
+            query = query.filter(Notification.is_acknowledged == True)
+        # else: 'all' - no additional filter
+        
+        alerts = query.order_by(
+            # Order by urgency and time
+            case(
+                (Notification.urgency_level == 'CRITICAL', 1),
+                (Notification.urgency_level == 'HIGH', 2),
+                (Notification.urgency_level == 'MODERATE', 3),
+                (Notification.urgency_level == 'LOW', 4),
+                else_=5
+            ),
+            Notification.created_at.desc()
+        ).all()
+        
+        alert_list = [a.to_dict() for a in alerts]
+        
+        # Count by urgency (for all alerts)
+        all_alerts = Notification.query.filter(
+            Notification.recipient_id == user.id,
+            Notification.notification_type == 'patient_alert',
+            Notification.is_dismissed == False
+        ).all()
+        
+        pending_count = len([a for a in all_alerts if not a.is_acknowledged])
+        acknowledged_count = len([a for a in all_alerts if a.is_acknowledged])
+        critical = len([a for a in all_alerts if a.urgency_level == 'CRITICAL' and not a.is_acknowledged])
+        high = len([a for a in all_alerts if a.urgency_level == 'HIGH' and not a.is_acknowledged])
+        moderate = len([a for a in all_alerts if a.urgency_level == 'MODERATE' and not a.is_acknowledged])
+        
+        return jsonify({
+            'success': True,
+            'alerts': alert_list,
+            'pending_count': pending_count,
+            'acknowledged_count': acknowledged_count,
+            'critical_count': critical,
+            'high_count': high,
+            'moderate_count': moderate,
+            'total_count': len(alert_list)
+        }), 200
+    
+    except Exception as e:
+        print(f"Error fetching alerts: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/alert-case/<int:alert_id>', methods=['GET'])
+@login_required
+def get_alert_case(alert_id):
+    """Get full case details for an alert (patient + analysis data) - only for recipient"""
+    try:
+        user = get_current_user()
+        
+        # Get the notification/alert
+        alert = Notification.query.get(alert_id)
+        if not alert:
+            return jsonify({'success': False, 'error': 'Alert not found'}), 404
+        
+        # Only recipient (assigned doctor) can view
+        if alert.recipient_id != user.id:
+            return jsonify({'success': False, 'error': 'Unauthorized - not recipient of this alert'}), 403
+        
+        # Get analysis and patient data
+        analysis = Analysis.query.get(alert.analysis_id)
+        if not analysis:
+            return jsonify({'success': False, 'error': 'Analysis not found'}), 404
+        
+        patient = Patient.query.get(alert.patient_id)
+        if not patient:
+            return jsonify({'success': False, 'error': 'Patient not found'}), 404
+        
+        # Get age directly from patient record
+        age = patient.age
+        
+        # Calculate CURB-65
+        curb_score_val = analysis.curb_score if hasattr(analysis, 'curb_score') else 0
+        curb_score_data = {
+            'score': curb_score_val,
+            'risk': 'Severe' if curb_score_val >= 4 else ('Moderate' if curb_score_val >= 2 else 'Low')
+        }
+        
+        # Get annotations if they exist
+        annotation = Annotation.query.filter_by(analysis_id=analysis.id).first()
+        annotations_data = {
+            'doctor_name': annotation.doctor_name if annotation else '',
+            'final_diagnosis': annotation.final_diagnosis if annotation else '',
+            'clinical_notes': annotation.clinical_notes if annotation else '',
+            'treatment_plan': annotation.treatment_plan if annotation else '',
+            'follow_up_instructions': annotation.follow_up_instructions if annotation else ''
+        } if annotation else {}
+        
+        response = {
+            'success': True,
+            'alert': alert.to_dict(),
+            'analysis': {
+                'analysis_id': analysis.id,
+                'patient_id': patient.id,
+                'timestamp': analysis.created_at.isoformat(),
+                'patient_name': patient.name,
+                'medical_id': patient.medical_id,
+                'age': age,
+                'pneumonia_detected': analysis.pneumonia_detected,
+                'confidence': analysis.confidence,
+                'curb_score': curb_score_data,
+                'image_url': f"/api/image/{analysis.id}",
+                'annotations': annotations_data
+            }
+        }
+        
+        return jsonify(response), 200
+    
+    except Exception as e:
+        print(f"Error fetching alert case: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 
 @app.route('/api/analyze', methods=['POST'])
 @login_required
@@ -899,6 +1146,7 @@ def analyze_xray():
         response = {
             'success': True,
             'analysis_id': analysis.id,
+            'patient_id': patient.id,
             'timestamp': analysis.created_at.isoformat(),
             'patient_name': patient.name,
             'medical_id': patient.medical_id,

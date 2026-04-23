@@ -151,6 +151,7 @@
 
                     <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px">
                         <button id="saveAnnotationsBtn" class="btn btn-outline">Save Annotations</button>
+                        <button id="sendAlertBtn" class="btn btn-danger" style="display: none; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; color: white; font-weight: 600; cursor: pointer; padding: 10px 18px; border-radius: 6px; transition: all 0.3s;">🔴 Send Alert to Doctor</button>
                     </div>
 
                     <div style="height:1px; background:#e9ecef; margin:16px 0"></div>
@@ -251,6 +252,7 @@
         </div>
     </div>
 
+
     <script>
         // Global variable to store analysis_id
         let currentAnalysisId = null;
@@ -262,6 +264,9 @@
         const curbInfoBtn = document.getElementById('curbInfoBtn');
         const confidenceModalClose = document.getElementById('confidenceModalClose');
         const curbModalClose = document.getElementById('curbModalClose');
+        const gradcamModal = document.getElementById('gradcamModal');
+        const gradcamModalClose = document.getElementById('gradcamModalClose');
+        const gradcamBtn = document.getElementById('gradcamBtn');
 
         // Confidence score modal
         confidenceInfoBtn?.addEventListener('click', () => {
@@ -329,6 +334,13 @@
                 // Update action
                 const action = result.curb_score.score >= 3 ? 'Hospitalize' : (result.curb_score.score >= 2 ? 'Monitor' : 'Outpatient care');
                 document.getElementById('action').textContent = 'Action: ' + action;
+
+                // Show Send Alert button only if pneumonia detected
+                if (result.pneumonia_detected) {
+                    document.getElementById('sendAlertBtn').style.display = 'block';
+                    // Store result for alert sending
+                    window.currentAnalysisResult = result;
+                }
 
                 // Load annotations if they exist
                 if (result.annotations) {
@@ -453,6 +465,74 @@
             } catch (error) {
                 console.error('Error saving annotations:', error);
                 alert('Failed to save annotations. Please try again.');
+            }
+        });
+
+        // Send Alert to Doctor handler
+        document.getElementById('sendAlertBtn')?.addEventListener('click', async function(e){
+            e.preventDefault();
+            
+            if (!window.currentAnalysisResult) {
+                alert('No analysis data found. Please complete an analysis first.');
+                return;
+            }
+
+            try {
+                // Get list of doctors from the system
+                const doctorsResponse = await fetch('/api/users?role=doctor');
+                const doctorsData = await doctorsResponse.json();
+                
+                if (!doctorsData.success || !doctorsData.users || doctorsData.users.length === 0) {
+                    alert('No doctors available in the system.');
+                    return;
+                }
+
+                // Create a simple dialog to select doctor
+                let doctorOptions = doctorsData.users.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                const userResponse = prompt('Select doctor to alert (paste doctor ID):\n\nDoctor IDs:\n' + 
+                    doctorsData.users.map(d => `${d.id}: ${d.name}`).join('\n') + 
+                    '\n\nEnter doctor ID:', doctorsData.users[0]?.id || '');
+                
+                if (!userResponse) return; // User cancelled
+                
+                const recipientId = parseInt(userResponse);
+                if (isNaN(recipientId)) {
+                    alert('Invalid doctor ID');
+                    return;
+                }
+
+                const result = window.currentAnalysisResult;
+                
+                // Send alert via API
+                const alertResponse = await fetch('/api/send-alert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        analysis_id: result.analysis_id,
+                        patient_id: result.patient_id,
+                        recipient_id: recipientId,
+                        confidence: result.confidence,
+                        curb_score: result.curb_score.score
+                    })
+                });
+
+                if (!alertResponse.ok) {
+                    throw new Error('Failed to send alert');
+                }
+
+                const alertResult = await alertResponse.json();
+                if (alertResult.success) {
+                    alert(`✓ Alert sent (${alertResult.notification.urgency_level} priority)\n\nDoctor has been notified about this critical case.`);
+                    document.getElementById('sendAlertBtn').disabled = true;
+                    document.getElementById('sendAlertBtn').style.opacity = '0.6';
+                } else {
+                    alert('Error sending alert: ' + (alertResult.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error sending alert:', error);
+                alert('Failed to send alert. Please try again.');
             }
         });
 

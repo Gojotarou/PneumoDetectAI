@@ -50,29 +50,39 @@
                             <h3>Critical Alerts</h3>
                             <div class="alert-metric-value" id="critical-count">0</div>
                         </div>
-                        <div class="alert-metric-icon critical">⚠️</div>
+                        <div class="alert-metric-icon critical"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
                     </div>
                     <div class="alert-metric-card">
                         <div>
                             <h3>Moderate Alerts</h3>
                             <div class="alert-metric-value" id="moderate-count">0</div>
                         </div>
-                        <div class="alert-metric-icon moderate">🔔</div>
+                        <div class="alert-metric-icon moderate"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></div>
                     </div>
                     <div class="alert-metric-card">
                         <div>
-                            <h3>In Progress</h3>
-                            <div class="alert-metric-value" id="progress-count">0</div>
+                            <h3>Pending Alerts</h3>
+                            <div class="alert-metric-value" id="pending-count">0</div>
                         </div>
-                        <div class="alert-metric-icon progress">⏱️</div>
+                        <div class="alert-metric-icon progress"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
                     </div>
                     <div class="alert-metric-card">
                         <div>
-                            <h3>Resolved Today</h3>
-                            <div class="alert-metric-value" id="resolved-count">0</div>
+                            <h3>Acknowledged</h3>
+                            <div class="alert-metric-value" id="acknowledged-count">0</div>
                         </div>
-                        <div class="alert-metric-icon resolved">✓</div>
+                        <div class="alert-metric-icon resolved"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
                     </div>
+                </div>
+
+                <!-- Alert Tabs -->
+                <div style="display: flex; gap: 12px; margin: 24px 0 16px; border-bottom: 2px solid #e9ecef;">
+                    <button id="tab-pending" class="alert-tab active" style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid #0284c7; color: #0284c7; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">
+                        🔴 Pending <span id="pending-badge" style="display: inline-block; background: #dc3545; color: white; border-radius: 12px; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 12px; margin-left: 6px;">0</span>
+                    </button>
+                    <button id="tab-acknowledged" class="alert-tab" style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid transparent; color: #999; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.3s;">
+                        ✓ Acknowledged <span id="acknowledged-badge" style="display: inline-block; background: #4caf50; color: white; border-radius: 12px; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 12px; margin-left: 6px;">0</span>
+                    </button>
                 </div>
 
                 <!-- Alerts List -->
@@ -86,22 +96,56 @@
     </div>
 
     <script>
+        let allAlerts = [];
+        let currentTab = 'pending';
+
         // Load alerts on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadAlerts();
+            loadUserInfo();
+            setupTabListeners();
         });
+
+        function setupTabListeners() {
+            document.getElementById('tab-pending').addEventListener('click', function() {
+                currentTab = 'pending';
+                updateTabUI();
+                displayAlerts();
+            });
+
+            document.getElementById('tab-acknowledged').addEventListener('click', function() {
+                currentTab = 'acknowledged';
+                updateTabUI();
+                displayAlerts();
+            });
+        }
+
+        function updateTabUI() {
+            const tabPending = document.getElementById('tab-pending');
+            const tabAcknowledged = document.getElementById('tab-acknowledged');
+
+            if (currentTab === 'pending') {
+                tabPending.style.borderBottomColor = '#0284c7';
+                tabPending.style.color = '#0284c7';
+                tabAcknowledged.style.borderBottomColor = 'transparent';
+                tabAcknowledged.style.color = '#999';
+            } else {
+                tabPending.style.borderBottomColor = 'transparent';
+                tabPending.style.color = '#999';
+                tabAcknowledged.style.borderBottomColor = '#4caf50';
+                tabAcknowledged.style.color = '#4caf50';
+            }
+        }
 
         async function loadAlerts() {
             try {
-                // Fetch patient records from API to extract critical cases
-                const response = await fetch('/api/patient-records');
+                // Fetch real alerts from notification system
+                const response = await fetch('/api/alerts?filter=all');
                 const data = await response.json();
 
                 if (data.success) {
-                    // Filter for critical and moderate cases
-                    const alerts = data.records.filter(r => r.pneumonia_detected);
-                    updateMetrics(alerts);
-                    populateAlerts(alerts);
+                    updateMetrics(data);
+                    displayAlerts();  // Display filtered based on current tab
                 } else {
                     showNoAlerts();
                 }
@@ -111,17 +155,31 @@
             }
         }
 
-        function updateMetrics(alerts) {
-            // Categorize alerts by severity
-            const critical = alerts.filter(a => a.curb_score >= 3).length;
-            const moderate = alerts.filter(a => a.curb_score === 2).length;
-            const inProgress = Math.floor(critical * 0.4); // Simulated in-progress count
-            const resolved = alerts.length - critical - moderate - inProgress;
+        function updateMetrics(data) {
+            // Update metrics from real alerts
+            document.getElementById('critical-count').textContent = data.critical_count || 0;
+            document.getElementById('moderate-count').textContent = data.high_count || 0;
+            document.getElementById('pending-count').textContent = data.pending_count || 0;
+            document.getElementById('acknowledged-count').textContent = data.acknowledged_count || 0;
+            document.getElementById('pending-badge').textContent = data.pending_count || 0;
+            document.getElementById('acknowledged-badge').textContent = data.acknowledged_count || 0;
+            
+            // Store all alerts for tab switching
+            allAlerts = data.alerts || [];
+        }
 
-            document.getElementById('critical-count').textContent = critical;
-            document.getElementById('moderate-count').textContent = moderate;
-            document.getElementById('progress-count').textContent = inProgress;
-            document.getElementById('resolved-count').textContent = resolved;
+        function displayAlerts() {
+            // Filter alerts based on current tab
+            const filteredAlerts = allAlerts.filter(alert => {
+                if (currentTab === 'pending') {
+                    return !alert.is_acknowledged;
+                } else if (currentTab === 'acknowledged') {
+                    return alert.is_acknowledged;
+                }
+                return true;
+            });
+
+            populateAlerts(filteredAlerts);
         }
 
         function populateAlerts(alerts) {
@@ -129,59 +187,70 @@
             container.innerHTML = '';
 
             if (alerts.length === 0) {
-                showNoAlerts();
+                if (currentTab === 'pending') {
+                    container.innerHTML = '<div class="no-alerts" style="text-align: center; padding: 60px 32px; color: #95a5a6;"><p>✓ No pending alerts</p><p style="font-size: 13px; color: #c0c0c0;">All cases have been reviewed</p></div>';
+                } else {
+                    container.innerHTML = '<div class="no-alerts" style="text-align: center; padding: 60px 32px; color: #95a5a6;"><p>No acknowledged alerts yet</p><p style="font-size: 13px; color: #c0c0c0;">Acknowledge pending alerts to see them here</p></div>';
+                }
                 return;
             }
 
             alerts.forEach(alert => {
-                const severityClass = alert.curb_score >= 3 ? 'critical' : (alert.curb_score === 2 ? 'moderate' : 'low');
-                const severityBadge = alert.curb_score >= 3 ? 'CRITICAL' : (alert.curb_score === 2 ? 'MODERATE' : 'LOW');
-                const confidencePercent = Math.round(alert.confidence);
-                const severityPercent = (alert.curb_score / 5) * 100;
+                // Map urgency level to severity class
+                const severityMap = {
+                    'CRITICAL': 'critical',
+                    'HIGH': 'moderate',
+                    'MODERATE': 'moderate',
+                    'LOW': 'low'
+                };
+                const severityClass = severityMap[alert.urgency_level] || 'moderate';
+                const urgencyColor = {
+                    'CRITICAL': '#dc3545',
+                    'HIGH': '#ff9800',
+                    'MODERATE': '#ffb74d',
+                    'LOW': '#4caf50'
+                }[alert.urgency_level] || '#ff9800';
 
                 const alertCard = document.createElement('div');
                 alertCard.className = `alert-card ${severityClass}`;
+                
+                let acknowledgedInfo = '';
+                if (alert.is_acknowledged) {
+                    const ackTime = new Date(alert.acknowledged_at).toLocaleString();
+                    acknowledgedInfo = `<div class="alert-info-row" style="color: #4caf50;"><span class="alert-info-label">Acknowledged:</span><span class="alert-info-value">${ackTime}</span></div>`;
+                }
+                
                 alertCard.innerHTML = `
                     <div class="alert-header">
-                        <span class="alert-badge ${severityClass}">${severityBadge}</span>
-                        <div class="alert-title">Patient ${alert.medical_id}</div>
+                        <span class="alert-badge ${severityClass}" style="background-color: ${urgencyColor};">${alert.urgency_level}</span>
+                        <div class="alert-title">Patient ${alert.patient_name}</div>
                     </div>
 
                     <div class="alert-content">
                         <div class="alert-info">
                             <div class="alert-info-row">
-                                <span class="alert-info-label">Date:</span>
-                                <span class="alert-info-value">${formatDate(alert.timestamp)}</span>
+                                <span class="alert-info-label">From:</span>
+                                <span class="alert-info-value">${alert.sender_name}</span>
                             </div>
                             <div class="alert-info-row">
-                                <span class="alert-info-label">AI Confidence:</span>
-                                <span class="alert-info-value">${confidencePercent}% (Pneumonia)</span>
+                                <span class="alert-info-label">Received:</span>
+                                <span class="alert-info-value">${new Date(alert.created_at).toLocaleString()}</span>
                             </div>
-                            <div class="alert-info-row">
-                                <span class="alert-info-label">Severity Score:</span>
-                                <span class="alert-info-value" style="color: ${alert.curb_score >= 3 ? '#dc3545' : '#ff9800'};"><strong>${alert.curb_score} ${alert.curb_score >= 3 ? '(HIGH RISK)' : '(MODERATE)'}</strong></span>
-                            </div>
-                            <div class="alert-action-required">ACTION REQUIRED</div>
+                            ${acknowledgedInfo}
+                            <div class="alert-action-required" style="background-color: ${urgencyColor}; color: white;">PRIORITY: ${alert.urgency_level}</div>
                         </div>
-                        <div class="alert-severity-section">
-                            <div class="alert-severity-label">AI Confidence: ${confidencePercent}% (Pneumonia)</div>
-                            <div class="alert-severity-bar">
-                                <div class="alert-severity-fill" style="width: ${severityPercent}%">
-                                    <div class="alert-severity-thumb" style="left: ${severityPercent}%"></div>
-                                </div>
-                            </div>
-                            <div style="font-size: 12px; color: #95a5a6; margin-top: 8px;">
-                                Severity Score: ${alert.curb_score} (HIGH RISK)
-                            </div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                            <strong>Alert:</strong>
+                            <p style="margin: 8px 0; color: #555; font-size: 14px;">${alert.message}</p>
                         </div>
                     </div>
 
                     <div class="alert-actions">
-                        <button class="alert-btn notify" onclick="notifyDoctor('${alert.medical_id}')">
-                            NOTIFY DOCTOR
-                        </button>
-                        <button class="alert-btn view" onclick="viewCase('${alert.id}')">
-                            VIEW CASE
+                        ${alert.is_acknowledged ? `<span style="color: #4caf50; font-weight: 600;">✓ Acknowledged</span>` : `<button class="alert-btn notify" onclick="acknowledgeAlert(${alert.id})">
+                            ACKNOWLEDGE
+                        </button>`}
+                        <button class="alert-btn view" onclick="viewAlert(${alert.id})">
+                            VIEW CASE & DETAILS
                         </button>
                     </div>
                 `;
@@ -189,26 +258,56 @@
             });
         }
 
-        function formatDate(timestamp) {
-            const date = new Date(timestamp);
-            return date.toISOString().split('T')[0];
+        async function acknowledgeAlert(alertId) {
+            try {
+                const response = await fetch(`/api/notifications/${alertId}/acknowledge`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('✓ Alert acknowledged - Case moved to history');
+                    loadAlerts(); // Reload to update UI
+                } else {
+                    alert('Error acknowledging alert');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error acknowledging alert');
+            }
         }
 
-        function notifyDoctor(patientId) {
-            console.log('Notifying doctor about:', patientId);
-            alert(`Doctor notification sent for patient ${patientId}`);
-        }
+        async function viewAlert(alertId) {
+            // Fetch full case details from backend (only for this recipient doctor)
+            try {
+                const response = await fetch(`/api/alert-case/${alertId}`);
+                const data = await response.json();
 
-        function viewCase(alertId) {
-            console.log('Viewing case:', alertId);
-            alert('Case view feature coming soon');
+                if (data.success) {
+                    // Store the full analysis data in sessionStorage for results.html
+                    sessionStorage.setItem('analysis_result', JSON.stringify(data.analysis));
+                    
+                    // Mark alert as read
+                    await fetch(`/api/notifications/${alertId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    // Navigate to results page
+                    window.location.href = '/results.html';
+                } else {
+                    alert('Error loading case details: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load case details. Please try again.');
+            }
         }
 
         function showNoAlerts() {
             const container = document.getElementById('alerts-container');
             container.innerHTML = `
                 <div class="no-alerts">
-                    <p>✓ No critical alerts at this time</p>
+                    <p>✓ No alerts at this time</p>
                     <p style="font-size: 13px; color: #c0c0c0;">All patient cases are stable</p>
                 </div>
             `;

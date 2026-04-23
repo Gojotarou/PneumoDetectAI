@@ -124,6 +124,7 @@ class Analysis(db.Model):
     # Image storage
     image_filename = db.Column(db.String(255))  # name of saved image file
     image_base64 = db.Column(db.LargeBinary)  # Store binary image data directly (more efficient than base64)
+    gradcam_image_path = db.Column(db.String(255))  # Path to stored Grad-CAM heatmap PNG
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -198,9 +199,14 @@ class Notification(db.Model):
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'))  # Optional: related patient
     analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'))  # Optional: related analysis
     
+    # Hospital-grade urgency level (CRITICAL, HIGH, MODERATE, LOW)
+    urgency_level = db.Column(db.String(20), default='MODERATE')  # e.g., 'CRITICAL', 'HIGH', 'MODERATE', 'LOW'
+    
     # Status
     is_read = db.Column(db.Boolean, default=False)
     is_dismissed = db.Column(db.Boolean, default=False)
+    is_acknowledged = db.Column(db.Boolean, default=False)  # Doctor acknowledged the alert
+    acknowledged_at = db.Column(db.DateTime)  # When doctor acknowledged
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -223,8 +229,11 @@ class Notification(db.Model):
             'patient_id': self.patient_id,
             'patient_name': self.patient.name if self.patient else None,
             'analysis_id': self.analysis_id,
+            'urgency_level': self.urgency_level,
             'is_read': self.is_read,
             'is_dismissed': self.is_dismissed,
+            'is_acknowledged': self.is_acknowledged,
+            'acknowledged_at': self.acknowledged_at.isoformat() if self.acknowledged_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'read_at': self.read_at.isoformat() if self.read_at else None
         }
