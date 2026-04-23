@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management - PneumoDetect AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .tabs-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e5f0;
+        }
+
+        .tab-btn {
+            padding: 12px 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            color: #667eea;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-responsive {
+            background: white;
+            border-radius: 8px;
+            overflow: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead tr {
+            background: #f5f7fa;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #e0e5f0;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e5f0;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-delete {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #ff5252;
+        }
+
+        .badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-doctor {
+            background: #d3e9f7;
+            color: #0066cc;
+        }
+
+        .badge-nurse {
+            background: #e8d5f2;
+            color: #6b21a8;
+        }
+
+        .badge-admin {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 15px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status-active {
+            color: #27ae60;
+        }
+
+        .status-inactive {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Dashboard"></span>Dashboard</a>
+                <a href="{{ url_for('new_analysis') }}" id="newAnalysisLink"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
+                <a href="{{ url_for('report') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/history.png') }}" alt="Patient History"></span>Patient History</a>
+                <a href="{{ url_for('management') }}" id="managementLink" style="display: none;"><span class="nav-icon"><img src="{{ url_for('static', filename='images/management.png') }}" alt="Management"></span>Management</a>
+                <a href="{{ url_for('alerts') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/alerts.png') }}" alt="Alerts"></span>Alerts</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatarInitials">--</div>
+                <div class="user-details">
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userEmail">...</p>
+                    <span id="userRole" style="display: block; font-size: 12px; color: #667eea; margin-top: 4px; text-transform: capitalize">--</span>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h1>System Management</h1>
+                        <p>Manage staff assignments and patient allocations</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Statistics -->
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="stat-label">Total Staff</div>
+                        <div class="stat-number" id="total-users">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Total Patients</div>
+                        <div class="stat-number" id="total-patients">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Active Assignments</div>
+                        <div class="stat-number" id="total-assignments">-</div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs-container">
+                    <button class="tab-btn active" onclick="switchTab('assignments')">Patient Assignments</button>
+                    <button class="tab-btn" onclick="switchTab('users')">Staff Users</button>
+                </div>
+
+                <!-- Patient Assignments Tab -->
+                <div id="assignments" class="tab-content active">
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Patient Name</th>
+                                        <th>Medical ID</th>
+                                        <th>Assigned Staff</th>
+                                        <th>Role Type</th>
+                                        <th>Assigned By</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assignments-table">
+                                    <tr>
+                                        <td colspan="6" class="empty-state">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Staff Users Tab -->
+                <div id="users" class="tab-content">
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table">
+                                    <tr>
+                                        <td colspan="5" class="empty-state">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load data for the tab
+            if (tabName === 'assignments') {
+                loadAssignments();
+            } else if (tabName === 'users') {
+                loadUsers();
+            }
+        }
+
+        async function loadAssignments() {
+            try {
+                const response = await fetch('/api/assignments');
+                const data = await response.json();
+
+                if (data.success) {
+                    const tbody = document.getElementById('assignments-table');
+                    tbody.innerHTML = '';
+
+                    if (data.assignments.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No assignments found</td></tr>';
+                        document.getElementById('total-assignments').textContent = '0';
+                        return;
+                    }
+
+                    data.assignments.forEach(assignment => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${assignment.patient_name}</strong></td>
+                            <td>${assignment.patient_id}</td>
+                            <td>${assignment.staff_name}</td>
+                            <td><span class="badge ${assignment.role_type.includes('nurse') ? 'badge-nurse' : 'badge-doctor'}">${assignment.role_type.replace(/_/g, ' ')}</span></td>
+                            <td>${assignment.assigned_by}</td>
+                            <td>
+                                <button class="action-btn btn-delete" onclick="deleteAssignment(${assignment.id})">Delete</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    document.getElementById('total-assignments').textContent = data.assignments.length;
+                }
+            } catch (error) {
+                console.error('Error loading assignments:', error);
+                document.getElementById('assignments-table').innerHTML = '<tr><td colspan="6" class="empty-state">Error loading assignments</td></tr>';
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+
+                if (data.success) {
+                    const tbody = document.getElementById('users-table');
+                    tbody.innerHTML = '';
+
+                    if (data.users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No users found</td></tr>';
+                        document.getElementById('total-users').textContent = '0';
+                        return;
+                    }
+
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        const statusClass = user.is_active ? 'status-active' : 'status-inactive';
+                        const statusText = user.is_active ? '✓ Active' : '✗ Inactive';
+                        row.innerHTML = `
+                            <td><strong>${user.name}</strong></td>
+                            <td>${user.email}</td>
+                            <td><span class="badge ${user.role === 'doctor' ? 'badge-doctor' : user.role === 'nurse' ? 'badge-nurse' : 'badge-admin'}">${user.role}</span></td>
+                            <td>${user.department || '-'}</td>
+                            <td><span class="${statusClass}">${statusText}</span></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    document.getElementById('total-users').textContent = data.users.length;
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('users-table').innerHTML = '<tr><td colspan="5" class="empty-state">Error loading users</td></tr>';
+            }
+        }
+
+        async function deleteAssignment(assignmentId) {
+            if (!confirm('Are you sure you want to remove this assignment?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/assignments/${assignmentId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Assignment removed successfully');
+                    loadAssignments();
+                } else {
+                    alert('Failed to remove assignment: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error deleting assignment:', error);
+                alert('Error removing assignment: ' + error.message);
+            }
+        }
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    const user = result.user;
+                    
+                    // Update user avatar (initials)
+                    const names = user.name.split(' ');
+                    const initials = names.map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('userAvatarInitials').textContent = initials;
+                    
+                    // Update user details
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('userEmail').textContent = user.email;
+                    document.getElementById('userRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+                    
+                    // Update navigation based on role
+                    if (user.role === 'admin') {
+                        document.getElementById('newAnalysisLink').style.display = 'none';
+                        document.getElementById('managementLink').style.display = 'flex';
+                    } else {
+                        // Non-admin shouldn't access this page
+                        window.location.href = '{{ url_for("dashboard") }}';
+                    }
+                } else {
+                    // Not logged in, redirect to login
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        });
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            loadUserInfo();
+            loadAssignments();
+        });
+    </script>
+</body>
+</html>

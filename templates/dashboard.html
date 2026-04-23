@@ -19,121 +19,583 @@
             </div>
             <nav class="nav-links">
                 <a href="{{ url_for('dashboard') }}" class="active"><span class="nav-icon"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Dashboard"></span>Dashboard</a>
-                <a href="{{ url_for('new_analysis') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
+                <a href="{{ url_for('new_analysis') }}" id="newAnalysisLink"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
                 <a href="{{ url_for('report') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/history.png') }}" alt="Patient History"></span>Patient History</a>
+                <a href="{{ url_for('management') }}" id="managementLink" style="display: none;"><span class="nav-icon"><img src="{{ url_for('static', filename='images/management.png') }}" alt="Management"></span>Management</a>
                 <a href="{{ url_for('alerts') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/alerts.png') }}" alt="Alerts"></span>Alerts</a>
             </nav>
             <div class="user-info">
-                <div class="user-avatar">Dr</div>
+                <div class="user-avatar" id="userAvatarInitials">--</div>
                 <div class="user-details">
-                    <h3>Dr. Sarah Johnson</h3>
-                    <p>drsarahjohnson@hospital.com</p>
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userEmail">...</p>
+                    <span id="userRole" style="display: block; font-size: 12px; color: #667eea; margin-top: 4px; text-transform: capitalize">--</span>
                 </div>
             </div>
-            <button class="logout-btn">Logout</button>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
             <div class="top-header">
-                <h1>Dashboard</h1>
-                <p>Welcome back! Here's an overview of your recent activity.</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p>Welcome back! Here's an overview of your recent activity.</p>
+                    </div>
+                    <!-- Notification Bell -->
+                    <div class="notification-bell" id="notificationBell">
+                        <button id="bellButton" class="bell-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+                        </button>
+                        <!-- Notification Dropdown -->
+                        <div id="notificationDropdown" class="notification-dropdown" style="display: none;">
+                            <div class="notification-header">
+                                <h3>Notifications</h3>
+                                <button id="clearAllNotifications" class="clear-btn">Clear All</button>
+                            </div>
+                            <div id="notificationsList" class="notifications-list">
+                                <!-- Notifications will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="content-wrapper">
                 <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-title">Total Analyses</span>
-                            <div class="stat-icon blue">📊</div>
-                        </div>
-                        <div class="stat-value">1,247</div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-title">Patients</span>
-                            <div class="stat-icon green">👥</div>
-                        </div>
-                        <div class="stat-value">856</div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-title">Pending Reviews</span>
-                            <div class="stat-icon orange">⏳</div>
-                        </div>
-                        <div class="stat-value">23</div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-title">Critical Alerts</span>
-                            <div class="stat-icon red">⚠️</div>
-                        </div>
-                        <div class="stat-value">4</div>
-                    </div>
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Will be populated by JavaScript based on role -->
                 </div>
 
                 <!-- Recent Cases -->
                 <div class="card">
                     <div class="card-header">
                         <h2>Recent Cases</h2>
-                        <p>Latest X-ray analyses and their results</p>
+                        <p id="recentCasesSubtitle">Latest X-ray analyses and their results</p>
                     </div>
-                    <div class="case-list">
-                        <div class="case-item">
-                            <div class="case-info">
-                                <div class="case-patient">
-                                    <h4>John Anderson</h4>
-                                    <span class="case-age">67 years</span>
+                    <div class="case-list" id="casesList">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- User Management Section (Admin Only) -->
+                <div class="card" id="userManagementCard" style="display: none;">
+                    <div class="card-header">
+                        <h2>User Management</h2>
+                        <p>Manage system users and permissions</p>
+                    </div>
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        User management features coming soon
+                    </div>
+                </div>
+
+                <!-- Patient Assignment Section (Admin Only) -->
+                <div class="card" id="assignmentManagementCard" style="display: none;">
+                    <div class="card-header">
+                        <h2>Patient Assignments</h2>
+                        <p>Assign patients to doctors and nurses</p>
+                    </div>
+                    
+                    <div style="padding: 20px;">
+                        <!-- Assignment Form -->
+                        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 16px; color: #2c3e50;">Create New Assignment</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; align-items: end;">
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 6px;">Patient</label>
+                                    <select id="assignPatientSelect" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;">
+                                        <option value="">Select patient...</option>
+                                    </select>
                                 </div>
-                                <div class="case-details">
-                                    <span class="case-id">MID-2024-001</span>
-                                    <span class="case-severity critical">Critical</span>
-                                    <span class="case-confidence">Severity: 90%</span>
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 6px;">Staff Member</label>
+                                    <select id="assignStaffSelect" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;">
+                                        <option value="">Select staff...</option>
+                                    </select>
                                 </div>
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 6px;">Role</label>
+                                    <select id="assignRoleSelect" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;">
+                                        <option value="primary_doctor">Primary Doctor</option>
+                                        <option value="secondary_doctor">Secondary Doctor</option>
+                                        <option value="assigned_nurse">Assigned Nurse</option>
+                                    </select>
+                                </div>
+                                <button id="createAssignmentBtn" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    Assign
+                                </button>
                             </div>
-                            <span class="case-date">2025-11-10 09:30</span>
-                            <a href="#" class="view-btn">View Details</a>
                         </div>
 
-                        <div class="case-item">
-                            <div class="case-info">
-                                <div class="case-patient">
-                                    <h4>Maria Garcia</h4>
-                                    <span class="case-age">45 years</span>
-                                </div>
-                                <div class="case-details">
-                                    <span class="case-id">MID-2024-002</span>
-                                    <span class="case-severity moderate">Moderate</span>
-                                    <span class="case-confidence">Severity: 66%</span>
-                                </div>
+                        <!-- Assignments List -->
+                        <div>
+                            <h4 style="margin-bottom: 12px; color: #2c3e50;">Current Assignments</h4>
+                            <div id="assignmentsList" style="display: grid; gap: 12px;">
+                                <!-- Will be populated by JavaScript -->
                             </div>
-                            <span class="case-date">2025-11-10 08:15</span>
-                            <a href="#" class="view-btn">View Details</a>
-                        </div>
-
-                        <div class="case-item">
-                            <div class="case-info">
-                                <div class="case-patient">
-                                    <h4>Robert Chen</h4>
-                                    <span class="case-age">54 years</span>
-                                </div>
-                                <div class="case-details">
-                                    <span class="case-id">MID-2024-003</span>
-                                    <span class="case-severity low-risk">Low Risk</span>
-                                    <span class="case-confidence">Severity: 32%</span>
-                                </div>
-                            </div>
-                            <span class="case-date">2025-11-09 16:45</span>
-                            <a href="#" class="view-btn">View Details</a>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
         </main>
     </div>
+
+    <script>
+        // Load current user information
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    const user = result.user;
+                    
+                    // Update user avatar (initials)
+                    const names = user.name.split(' ');
+                    const initials = names.map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('userAvatarInitials').textContent = initials;
+                    
+                    // Update user details
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('userEmail').textContent = user.email;
+                    document.getElementById('userRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+                    
+                    // Update navigation based on role
+                    if (user.role === 'admin') {
+                        document.getElementById('newAnalysisLink').style.display = 'none';
+                        document.getElementById('managementLink').style.display = 'flex';
+                    } else {
+                        document.getElementById('newAnalysisLink').style.display = 'flex';
+                        document.getElementById('managementLink').style.display = 'none';
+                    }
+                } else {
+                    // Not logged in, redirect to login
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error logging out. Please try again.');
+                }
+            }
+        });
+
+        // Load user info on page load
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard-data');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const data = result.data;
+                    
+                    // Render stats based on role
+                    renderStats(data);
+                    
+                    // Render recent cases
+                    renderRecentCases(data);
+                    
+                    // Show/hide admin sections
+                    if (data.show_user_management) {
+                        document.getElementById('userManagementCard').style.display = 'block';
+                        document.getElementById('assignmentManagementCard').style.display = 'block';
+                        // Store current user for later use
+                        sessionStorage.setItem('current_user', JSON.stringify(data));
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function renderStats(data) {
+            const statsGrid = document.getElementById('statsGrid');
+            const stats = data.stats;
+            
+            const statCards = {
+                'admin': [
+                    { title: 'Total Analyses', value: stats.total_analyses, icon: '📊', color: 'blue' },
+                    { title: 'Patients', value: stats.total_patients, icon: '👥', color: 'green' },
+                    { title: 'Pending Reviews', value: stats.pending_reviews, icon: '⏳', color: 'orange' },
+                    { title: 'Critical Alerts', value: stats.critical_alerts, icon: '⚠️', color: 'red' }
+                ],
+                'doctor': [
+                    { title: 'Assigned Patients', value: stats.assigned_patients, icon: '👥', color: 'green' },
+                    { title: 'My Analyses', value: stats.my_analyses, icon: '📊', color: 'blue' },
+                    { title: 'Pending Reviews', value: stats.pending_reviews, icon: '⏳', color: 'orange' },
+                    { title: 'Critical Alerts', value: stats.critical_alerts, icon: '⚠️', color: 'red' }
+                ],
+                'nurse': [
+                    { title: 'My Uploads', value: stats.my_uploads, icon: '📤', color: 'blue' },
+                    { title: 'Assigned Patients', value: stats.assigned_patients, icon: '👥', color: 'green' },
+                    { title: 'Pending Analysis', value: stats.pending_analysis, icon: '⏳', color: 'orange' },
+                    { title: 'Critical Alerts', value: stats.critical_alerts, icon: '⚠️', color: 'red' }
+                ]
+            };
+            
+            const cards = statCards[data.role] || statCards.admin;
+            statsGrid.innerHTML = cards.map(card => `
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">${card.title}</span>
+                        <div class="stat-icon ${card.color}">${card.icon}</div>
+                    </div>
+                    <div class="stat-value">${card.value}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderRecentCases(data) {
+            const casesList = document.getElementById('casesList');
+            const recentCasesSubtitle = document.getElementById('recentCasesSubtitle');
+            
+            // Update subtitle based on role
+            const subtitles = {
+                'admin': 'Latest X-ray analyses from all staff',
+                'doctor': 'Your recent analyses',
+                'nurse': 'Your recent uploads'
+            };
+            recentCasesSubtitle.textContent = subtitles[data.role] || subtitles.admin;
+            
+            // Render cases
+            if (!data.recent_cases || data.recent_cases.length === 0) {
+                casesList.innerHTML = '<div style="padding: 30px; text-align: center; color: #999;">No recent cases</div>';
+                return;
+            }
+            
+            casesList.innerHTML = data.recent_cases.map(caseData => {
+                const pneumoniaStatus = caseData.pneumonia_detected ? 'Positive' : (caseData.pneumonia_detected === null ? 'Pending' : 'Negative');
+                const severityClass = caseData.pneumonia_detected ? (caseData.confidence > 75 ? 'critical' : 'moderate') : 'low-risk';
+                const extraInfo = data.role === 'admin' ? `<span class="case-staff">${caseData.created_by}</span>` : '';
+                
+                return `
+                    <div class="case-item">
+                        <div class="case-info">
+                            <div class="case-patient">
+                                <h4>${caseData.patient_name}</h4>
+                                <span class="case-age">${caseData.patient_age} years</span>
+                            </div>
+                            <div class="case-details">
+                                <span class="case-id">${caseData.medical_id}</span>
+                                <span class="case-severity ${severityClass}">${pneumoniaStatus}</span>
+                                <span class="case-confidence">${caseData.confidence ? 'Confidence: ' + caseData.confidence.toFixed(1) + '%' : 'Pending analysis'}</span>
+                                ${extraInfo}
+                            </div>
+                        </div>
+                        <span class="case-date">${new Date(caseData.created_at).toLocaleString()}</span>
+                        <a href="#" class="view-btn" onclick="viewCase(${caseData.id}); return false;">View Details</a>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function viewCase(caseId) {
+            console.log('Viewing case:', caseId);
+            // Implement case view logic
+            alert('Case view feature coming soon');
+        }
+
+        // === ASSIGNMENT MANAGEMENT (Phase 5) ===
+        async function loadAssignmentData() {
+            try {
+                const user = JSON.parse(sessionStorage.getItem('current_user') || '{}');
+                if (user.role !== 'admin') return;
+                
+                // Load patients, users, and assignments for the form
+                const [patientsRes, usersRes, assignmentsRes] = await Promise.all([
+                    fetch('/api/patients'),
+                    fetch('/api/users'),
+                    fetch('/api/assignments')
+                ]);
+                
+                if (!patientsRes.ok || !usersRes.ok || !assignmentsRes.ok) return;
+                
+                const patientsData = await patientsRes.json();
+                const usersData = await usersRes.json();
+                const assignmentsData = await assignmentsRes.json();
+                
+                // Populate patient dropdown
+                const patientSelect = document.getElementById('assignPatientSelect');
+                if (patientsData.success && Array.isArray(patientsData.patients)) {
+                    patientsData.patients.forEach(p => {
+                        const option = document.createElement('option');
+                        option.value = p.id;
+                        option.textContent = `${p.name} (${p.medical_id})`;
+                        patientSelect.appendChild(option);
+                    });
+                }
+                
+                // Populate staff dropdown with all users from API
+                const staffSelect = document.getElementById('assignStaffSelect');
+                if (usersData.success && Array.isArray(usersData.users)) {
+                    usersData.users.forEach(staffMember => {
+                        const option = document.createElement('option');
+                        option.value = staffMember.id;
+                        option.textContent = `${staffMember.name} (${staffMember.role})`;
+                        staffSelect.appendChild(option);
+                    });
+                }
+                
+                // Render existing assignments
+                if (assignmentsData.success && Array.isArray(assignmentsData.assignments)) {
+                    renderAssignments(assignmentsData.assignments);
+                }
+            } catch (error) {
+                console.error('Error loading assignment data:', error);
+            }
+        }
+
+        function renderAssignments(assignments) {
+            const assignmentsList = document.getElementById('assignmentsList');
+            
+            if (!assignments.length) {
+                assignmentsList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No assignments yet</p>';
+                return;
+            }
+            
+            assignmentsList.innerHTML = assignments.map(a => `
+                <div style="background: white; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${a.patient_name}</strong> → <span style="color: #667eea;">${a.staff_name}</span>
+                        <br>
+                        <small style="color: #999;">Role: ${a.role_type} | Assigned by: ${a.assigned_by}</small>
+                    </div>
+                    <button onclick="deleteAssignment(${a.id})" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteAssignment(assignmentId) {
+            if (!confirm('Remove this assignment?')) return;
+            
+            try {
+                const response = await fetch(`/api/assignments/${assignmentId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadAssignmentData(); // Reload the list
+                } else {
+                    alert('Error: ' + (result.error || 'Failed to remove assignment'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error removing assignment');
+            }
+        }
+
+        // Setup create assignment button
+        document.addEventListener('DOMContentLoaded', function() {
+            const createBtn = document.getElementById('createAssignmentBtn');
+            if (createBtn) {
+                createBtn.addEventListener('click', async function() {
+                    const patientId = document.getElementById('assignPatientSelect').value;
+                    const userId = document.getElementById('assignStaffSelect').value;
+                    const roleType = document.getElementById('assignRoleSelect').value;
+                    
+                    if (!patientId || !userId) {
+                        alert('Please select both patient and staff member');
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch('/api/assignments', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                patient_id: parseInt(patientId),
+                                user_id: parseInt(userId),
+                                role_type: roleType
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            alert('Assignment created successfully!');
+                            loadAssignmentData(); // Reload the list
+                        } else {
+                            alert('Error: ' + (result.error || 'Failed to create assignment'));
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error creating assignment');
+                    }
+                });
+            }
+        });
+
+        // Load user info and dashboard data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+            loadDashboardData();
+            loadAssignmentData();
+            loadNotifications();
+            
+            // Set up notification refresh every 10 seconds
+            setInterval(loadNotifications, 10000);
+            
+            // Set up notification bell click to toggle dropdown
+            const bellButton = document.getElementById('bellButton');
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            
+            bellButton.addEventListener('click', function() {
+                notificationDropdown.style.display = notificationDropdown.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.notification-bell')) {
+                    notificationDropdown.style.display = 'none';
+                }
+            });
+            
+            // Clear all notifications
+            const clearAllBtn = document.getElementById('clearAllNotifications');
+            if (clearAllBtn) {
+                clearAllBtn.addEventListener('click', function() {
+                    const notificationsList = document.getElementById('notificationsList');
+                    const items = notificationsList.querySelectorAll('.notification-item');
+                    items.forEach(item => {
+                        const notificationId = item.dataset.id;
+                        if (notificationId) {
+                            dismissNotification(notificationId);
+                        }
+                    });
+                });
+            }
+        });
+
+        // Phase 6: Notification Functions
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/notifications');
+                if (!response.ok) return;
+                
+                const result = await response.json();
+                if (result.success) {
+                    renderNotifications(result.notifications, result.unread_count);
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        function renderNotifications(notifications, unreadCount) {
+            const notificationsList = document.getElementById('notificationsList');
+            const notificationBadge = document.getElementById('notificationBadge');
+            
+            // Update badge
+            if (unreadCount > 0) {
+                notificationBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                notificationBadge.style.display = 'flex';
+            } else {
+                notificationBadge.style.display = 'none';
+            }
+            
+            // Render notifications
+            if (notifications.length === 0) {
+                notificationsList.innerHTML = '<div class="empty-notifications">No notifications yet</div>';
+                return;
+            }
+            
+            notificationsList.innerHTML = notifications.map(notif => `
+                <div class="notification-item ${notif.is_read ? '' : 'unread'}" data-id="${notif.id}">
+                    <div class="notification-content">
+                        <div class="notification-type">${notif.notification_type}</div>
+                        <div class="notification-message">${notif.message}</div>
+                        <div class="notification-time">${new Date(notif.created_at).toLocaleString()}</div>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="notification-action-btn" onclick="markAsRead(${notif.id})" title="Mark as read">
+                            ${notif.is_read ? 'Read' : 'Unread'}
+                        </button>
+                        <button class="notification-action-btn" onclick="dismissNotification(${notif.id})" title="Dismiss">
+                            X
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function markAsRead(notificationId) {
+            try {
+                const response = await fetch(`/api/notifications/${notificationId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    loadNotifications();
+                }
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+            }
+        }
+
+        async function dismissNotification(notificationId) {
+            try {
+                const response = await fetch(`/api/notifications/${notificationId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadNotifications();
+                }
+            } catch (error) {
+                console.error('Error dismissing notification:', error);
+            }
+        }
+
+        // Function to send notification (called from other parts of app)
+        async function sendNotification(recipientId, notificationType, message, patientId = null, analysisId = null) {
+            try {
+                const response = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient_id: recipientId,
+                        notification_type: notificationType,
+                        message: message,
+                        patient_id: patientId,
+                        analysis_id: analysisId
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Notification sent:', result);
+                    loadNotifications(); // Refresh in case current user is also recipient
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error sending notification:', error);
+            }
+            return false;
+        }
+    </script>
 </body>
 </html>

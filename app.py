@@ -1,13 +1,14 @@
 """
 PneumoDetect Flask Application
-Main backend server for medical X-ray analysis
+Main backend server for medical X-ray analysis with Role-Based Access Control
 """
 
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 from werkzeug.utils import secure_filename
+from functools import wraps
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import base64
 from io import BytesIO
 import numpy as np
@@ -20,7 +21,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
-from models import db, Patient, Analysis, Annotation, init_db
+from models import db, Patient, Analysis, Annotation, User, PatientStaff, Notification, init_db
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -28,6 +29,10 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
 # Database Configuration
@@ -41,8 +46,50 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database
 db.init_app(app)
 
+# Initialize database tables and test accounts
+init_db(app)
+
 # Create uploads folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# =====================================================================
+# AUTHENTICATION HELPERS & DECORATORS
+# =====================================================================
+
+def get_current_user():
+    """Get current logged-in user from session"""
+    if 'user_id' in session:
+        return User.query.get(session['user_id'])
+    return None
+
+def login_required(f):
+    """Decorator to require login"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not get_current_user():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'Unauthorized'}), 401
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def role_required(*allowed_roles):
+    """Decorator to require specific roles"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user = get_current_user()
+            if not user:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': 'Unauthorized'}), 401
+                return redirect(url_for('login_page'))
+            if user.role not in allowed_roles:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': 'Forbidden'}), 403
+                return jsonify({'error': 'Access Denied'}), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 # =====================================================================
 # LOAD CNN MODEL FOR PNEUMONIA DETECTION
@@ -55,47 +102,242 @@ except Exception as e:
     print(f"⚠ Warning: Could not load pneumonia model: {e}")
 
 # =====================================================================
+# ROUTES - Authentication
+# =====================================================================
+
+@app.route('/login.html', methods=['GET'])
+def login_page():
+    """Serve login page"""
+    if get_current_user():
+        return redirect(url_for('dashboard'))
+    return render_template('login.html')
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """Handle user login"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            return jsonify({'success': False, 'error': 'Email and password required'}), 400
+        
+        # Find user by email
+        user = User.query.filter_by(email=email).first()
+        
+        if not user or not user.check_password(password):
+            return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        
+        if not user.is_active:
+            return jsonify({'success': False, 'error': 'User account is inactive'}), 403
+        
+        # Set session
+        session.permanent = True
+        session['user_id'] = user.id
+        session['user_name'] = user.name
+        session['user_role'] = user.role
+        
+        return jsonify({
+            'success': True,
+            'message': 'Login successful',
+            'redirect': url_for('dashboard'),
+            'user': user.to_dict()
+        }), 200
+    
+    except Exception as e:
+        print(f"Login error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """Handle user logout"""
+    session.clear()
+    return jsonify({'success': True, 'message': 'Logged out successfully'}), 200
+
+@app.route('/api/current-user', methods=['GET'])
+def get_logged_user():
+    """Get current logged-in user info"""
+    user = get_current_user()
+    if user:
+        return jsonify({'success': True, 'user': user.to_dict()}), 200
+    return jsonify({'success': False, 'error': 'Not logged in'}), 401
+
+@app.route('/api/dashboard-data', methods=['GET'])
+@login_required
+def dashboard_data():
+    """Get role-specific dashboard data"""
+    user = get_current_user()
+    
+    try:
+        if user.role == 'admin':
+            # Admin sees all statistics
+            total_patients = Patient.query.count()
+            total_analyses = Analysis.query.count()
+            pending_reviews = Analysis.query.filter_by(reviewed_by_user_id=None).count()
+            
+            # Recent cases from all users
+            recent_cases = Analysis.query.order_by(Analysis.created_at.desc()).limit(5).all()
+            
+            data = {
+                'role': 'admin',
+                'stats': {
+                    'total_patients': total_patients,
+                    'total_analyses': total_analyses,
+                    'pending_reviews': pending_reviews,
+                    'critical_alerts': 4  # Placeholder
+                },
+                'recent_cases': [
+                    {
+                        'id': case.id,
+                        'patient_name': case.patient.name if case.patient else 'Unknown',
+                        'patient_age': case.patient.age if case.patient else None,
+                        'medical_id': case.patient.medical_id if case.patient else 'Unknown',
+                        'pneumonia_detected': case.pneumonia_detected,
+                        'confidence': case.confidence,
+                        'created_at': case.created_at.isoformat(),
+                        'created_by': case.created_by_user.name if case.created_by_user else 'Unknown'
+                    }
+                    for case in recent_cases
+                ],
+                'show_user_management': True
+            }
+            
+        elif user.role == 'doctor':
+            # Doctor sees only their assigned patients
+            assigned_patients = db.session.query(Patient).join(
+                PatientStaff, PatientStaff.patient_id == Patient.id
+            ).filter(PatientStaff.user_id == user.id).count()
+            
+            # Their analyses
+            my_analyses = Analysis.query.filter_by(created_by_user_id=user.id).count()
+            pending_reviews = Analysis.query.filter_by(reviewed_by_user_id=None).count()
+            
+            # Recent cases for this doctor
+            recent_cases = Analysis.query.filter_by(created_by_user_id=user.id).order_by(
+                Analysis.created_at.desc()
+            ).limit(5).all()
+            
+            data = {
+                'role': 'doctor',
+                'stats': {
+                    'assigned_patients': assigned_patients,
+                    'my_analyses': my_analyses,
+                    'pending_reviews': pending_reviews,
+                    'critical_alerts': 2  # Placeholder
+                },
+                'recent_cases': [
+                    {
+                        'id': case.id,
+                        'patient_name': case.patient.name if case.patient else 'Unknown',
+                        'patient_age': case.patient.age if case.patient else None,
+                        'medical_id': case.patient.medical_id if case.patient else 'Unknown',
+                        'pneumonia_detected': case.pneumonia_detected,
+                        'confidence': case.confidence,
+                        'created_at': case.created_at.isoformat(),
+                        'reviewed': case.reviewed_by_user_id is not None
+                    }
+                    for case in recent_cases
+                ],
+                'show_user_management': False
+            }
+            
+        elif user.role == 'nurse':
+            # Nurse sees their uploads and assigned patients
+            my_uploads = Analysis.query.filter_by(created_by_user_id=user.id).count()
+            assigned_patients = db.session.query(Patient).join(
+                PatientStaff, PatientStaff.patient_id == Patient.id
+            ).filter(PatientStaff.user_id == user.id).count()
+            
+            # Recent uploads
+            recent_cases = Analysis.query.filter_by(created_by_user_id=user.id).order_by(
+                Analysis.created_at.desc()
+            ).limit(5).all()
+            
+            data = {
+                'role': 'nurse',
+                'stats': {
+                    'my_uploads': my_uploads,
+                    'assigned_patients': assigned_patients,
+                    'pending_analysis': sum(1 for case in recent_cases if case.pneumonia_detected is None),
+                    'critical_alerts': 1  # Placeholder
+                },
+                'recent_cases': [
+                    {
+                        'id': case.id,
+                        'patient_name': case.patient.name if case.patient else 'Unknown',
+                        'patient_age': case.patient.age if case.patient else None,
+                        'medical_id': case.patient.medical_id if case.patient else 'Unknown',
+                        'pneumonia_detected': case.pneumonia_detected,
+                        'confidence': case.confidence,
+                        'created_at': case.created_at.isoformat(),
+                        'analysis_ready': case.pneumonia_detected is not None
+                    }
+                    for case in recent_cases
+                ],
+                'show_user_management': False
+            }
+        else:
+            return jsonify({'success': False, 'error': 'Unknown role'}), 400
+        
+        return jsonify({'success': True, 'data': data}), 200
+        
+    except Exception as e:
+        print(f"Dashboard data error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# =====================================================================
 # ROUTES - Serve HTML Pages
 # =====================================================================
 
 @app.route('/')
 @app.route('/dashboard.html')
+@login_required
 def dashboard():
     return render_template('dashboard.html')
 
-@app.route('/login.html')
-def login():
-    return render_template('login.html')
-
 @app.route('/new_analysis.html')
+@login_required
+@role_required('doctor', 'nurse')
 def new_analysis():
     return render_template('new_analysis.html')
 
 @app.route('/new_analysis_upload.html')
+@login_required
+@role_required('nurse', 'doctor')
 def new_analysis_upload():
     return render_template('new_analysis_upload.html')
 
 @app.route('/results.html')
+@login_required
 def results():
     return render_template('results.html')
 
 @app.route('/alerts.html')
+@login_required
 def alerts():
     return render_template('alerts.html')
 
 @app.route('/report.html')
+@login_required
+@role_required('doctor', 'nurse', 'admin')
 def report():
     return render_template('report.html')
 
-@app.route('/training.html')
-def training():
-    return render_template('training.html')
+@app.route('/management.html')
+@login_required
+@role_required('admin')
+def management():
+    return render_template('management.html')
 
 @app.route('/upload.html')
+@login_required
+@role_required('nurse', 'doctor')
 def upload():
     return render_template('upload.html')
 
 @app.route('/curb65.html')
+@login_required
 def curb65():
     return render_template('curb65.html')
 
@@ -104,17 +346,50 @@ def curb65():
 # =====================================================================
 
 @app.route('/api/patient-records', methods=['GET'])
+@login_required
 def get_patient_records():
     """
-    Get all patient records from database
+    Get patient records (analyses) - filtered by current user's assignments unless admin
+    Doctors/Nurses also see analyses they created themselves
+    Admin sees all records
     Returns: {'success': bool, 'records': list of patient analysis records}
     """
     try:
-        # Query all analyses sorted by creation date (newest first)
-        analyses = Analysis.query.order_by(Analysis.created_at.desc()).all()
+        user = get_current_user()
+        
+        # Admin sees all analyses
+        if user.role == 'admin':
+            analyses = Analysis.query.order_by(Analysis.created_at.desc()).all()
+        else:
+            # Doctor/Nurse see analyses from:
+            # 1. Patients assigned to them
+            # 2. Patients where they created the analysis (uploaded themselves)
+            
+            # Get patients assigned to this user
+            assigned_patient_ids = db.session.query(PatientStaff.patient_id).filter(
+                PatientStaff.user_id == user.id
+            ).subquery()
+            
+            # Get analyses from assigned patients OR created by this user
+            analyses = Analysis.query.filter(
+                (Analysis.patient_id.in_(db.session.query(assigned_patient_ids))) |
+                (Analysis.created_by_user_id == user.id)
+            ).order_by(Analysis.created_at.desc()).all()
         
         records = []
         for analysis in analyses:
+            # Get annotations for this analysis if they exist
+            annotation = Annotation.query.filter_by(analysis_id=analysis.id).first()
+            annotation_data = None
+            if annotation:
+                annotation_data = {
+                    'doctor_name': annotation.doctor_name,
+                    'final_diagnosis': annotation.final_diagnosis,
+                    'clinical_notes': annotation.clinical_notes,
+                    'treatment_plan': annotation.treatment_plan,
+                    'follow_up_instructions': annotation.follow_up_instructions
+                }
+            
             records.append({
                 'id': str(analysis.id),
                 'timestamp': analysis.created_at.strftime('%Y-%m-%d %H:%M:%S') if analysis.created_at else None,
@@ -125,7 +400,8 @@ def get_patient_records():
                 'confidence': analysis.confidence,
                 'curb_score': analysis.curb_score,
                 'curb_risk': analysis.curb_risk,
-                'image_data': f"data:image/png;base64,{analysis.image_base64}" if analysis.image_base64 else None
+                'image_url': f"/api/image/{analysis.id}" if analysis.image_base64 else None,
+                'annotations': annotation_data
             })
         
         return jsonify({
@@ -137,7 +413,394 @@ def get_patient_records():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/analysis/<int:analysis_id>', methods=['DELETE'])
+@login_required
+@role_required('admin', 'doctor', 'nurse')
+def delete_analysis(analysis_id):
+    """
+    Delete an analysis record by ID (also removes associated annotations)
+    Permissions:
+    - Admin: can delete any analysis
+    - Doctor: can delete analyses they uploaded OR reviewed
+    - Nurse: can delete analyses they uploaded
+    Returns: {'success': bool, 'message': str}
+    """
+    try:
+        user = get_current_user()
+        
+        # Find the analysis record
+        analysis = Analysis.query.get(analysis_id)
+        if not analysis:
+            return jsonify({'success': False, 'error': 'Analysis not found'}), 404
+        
+        # Permission check
+        can_delete = False
+        if user.role == 'admin':
+            can_delete = True
+        elif user.role == 'doctor':
+            # Doctor can delete if they created it OR reviewed it
+            can_delete = (analysis.created_by_user_id == user.id or 
+                         analysis.reviewed_by_user_id == user.id)
+        elif user.role == 'nurse':
+            # Nurse can delete if they created it
+            can_delete = (analysis.created_by_user_id == user.id)
+        
+        if not can_delete:
+            return jsonify({'success': False, 'error': 'You do not have permission to delete this analysis'}), 403
+        
+        # Delete associated annotations first using raw SQL to avoid schema issues
+        db.session.execute(db.text('DELETE FROM annotations WHERE analysis_id = :id'), {'id': analysis_id})
+        
+        # Delete the analysis record
+        db.session.delete(analysis)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Analysis record deleted successfully'
+        }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting analysis: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# =====================================================================
+# ROUTES - Patient Assignment Management (Phase 5)
+# =====================================================================
+
+@app.route('/api/users', methods=['GET'])
+@login_required
+@role_required('admin')
+def get_all_users():
+    """Get all staff users (admin only) for assignment dropdown"""
+    try:
+        users = User.query.all()
+        
+        user_list = []
+        for user in users:
+            user_list.append({
+                'id': user.id,
+                'name': user.name,
+                'email': user.email,
+                'role': user.role
+            })
+        
+        return jsonify({
+            'success': True,
+            'users': user_list
+        }), 200
+    
+    except Exception as e:
+        print(f"Error fetching users: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/patients', methods=['GET'])
+@login_required
+def get_patients():
+    """
+    Get patients - filtered by current user's assignments unless admin
+    Admin sees all patients
+    """
+    try:
+        user = get_current_user()
+        
+        if user.role == 'admin':
+            # Admin sees all patients
+            patients = Patient.query.all()
+        else:
+            # Doctor/Nurse see only assigned patients
+            patients = db.session.query(Patient).join(
+                PatientStaff, PatientStaff.patient_id == Patient.id
+            ).filter(PatientStaff.user_id == user.id).all()
+        
+        return jsonify({
+            'success': True,
+            'patients': [p.to_dict() for p in patients]
+        }), 200
+    
+    except Exception as e:
+        print(f"Error fetching patients: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/assignments', methods=['GET'])
+@login_required
+@role_required('admin')
+def get_assignments():
+    """Get all patient-staff assignments (admin only)"""
+    try:
+        assignments = PatientStaff.query.all()
+        
+        assignment_list = []
+        for assignment in assignments:
+            assignment_list.append({
+                'id': assignment.id,
+                'patient_id': assignment.patient_id,
+                'patient_name': assignment.patient.name if assignment.patient else 'Unknown',
+                'user_id': assignment.user_id,
+                'staff_name': assignment.staff.name if assignment.staff else 'Unknown',
+                'role_type': assignment.role_type,
+                'assigned_by': assignment.assigned_by.name if assignment.assigned_by else 'System',
+                'assigned_at': assignment.assigned_at.isoformat() if assignment.assigned_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'assignments': assignment_list
+        }), 200
+    
+    except Exception as e:
+        print(f"Error fetching assignments: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/assignments', methods=['POST'])
+@login_required
+@role_required('admin')
+def create_assignment():
+    """
+    Create patient-staff assignment (admin only)
+    Expected POST data: {
+        'patient_id': int,
+        'user_id': int,
+        'role_type': 'primary_doctor'|'secondary_doctor'|'assigned_nurse'
+    }
+    """
+    try:
+        data = request.get_json()
+        patient_id = data.get('patient_id')
+        user_id = data.get('user_id')
+        role_type = data.get('role_type', 'primary_doctor')
+        
+        if not patient_id or not user_id:
+            return jsonify({'success': False, 'error': 'patient_id and user_id required'}), 400
+        
+        if role_type not in ['primary_doctor', 'secondary_doctor', 'assigned_nurse']:
+            return jsonify({'success': False, 'error': 'Invalid role_type'}), 400
+        
+        # Check if patient exists
+        patient = Patient.query.get(patient_id)
+        if not patient:
+            return jsonify({'success': False, 'error': 'Patient not found'}), 404
+        
+        # Check if user exists
+        staff = User.query.get(user_id)
+        if not staff:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        # Check if assignment already exists
+        existing = PatientStaff.query.filter_by(
+            patient_id=patient_id,
+            user_id=user_id,
+            role_type=role_type
+        ).first()
+        
+        if existing:
+            return jsonify({
+                'success': False,
+                'error': 'This assignment already exists'
+            }), 409
+        
+        # Create assignment
+        assignment = PatientStaff(
+            patient_id=patient_id,
+            user_id=user_id,
+            role_type=role_type,
+            assigned_by_user_id=get_current_user().id
+        )
+        
+        db.session.add(assignment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Assigned {staff.name} as {role_type} to patient {patient.name}',
+            'assignment': {
+                'id': assignment.id,
+                'patient_id': assignment.patient_id,
+                'user_id': assignment.user_id,
+                'role_type': assignment.role_type
+            }
+        }), 201
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating assignment: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/assignments/<int:assignment_id>', methods=['DELETE'])
+@login_required
+@role_required('admin')
+def delete_assignment(assignment_id):
+    """Remove patient-staff assignment (admin only)"""
+    try:
+        assignment = PatientStaff.query.get(assignment_id)
+        if not assignment:
+            return jsonify({'success': False, 'error': 'Assignment not found'}), 404
+        
+        patient_name = assignment.patient.name if assignment.patient else 'Unknown'
+        staff_name = assignment.staff.name if assignment.staff else 'Unknown'
+        
+        db.session.delete(assignment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Removed {staff_name} from {patient_name}'
+        }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting assignment: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# =====================================================================
+# ROUTES - Notification Management (Phase 6)
+# =====================================================================
+
+@app.route('/api/notifications', methods=['GET'])
+@login_required
+def get_notifications():
+    """Get current user's notifications"""
+    try:
+        user = get_current_user()
+        
+        # Get unread and undismissed notifications
+        notifications = Notification.query.filter(
+            Notification.recipient_id == user.id,
+            Notification.is_dismissed == False
+        ).order_by(Notification.created_at.desc()).all()
+        
+        notification_list = [n.to_dict() for n in notifications]
+        
+        return jsonify({
+            'success': True,
+            'notifications': notification_list,
+            'unread_count': len([n for n in notifications if not n.is_read])
+        }), 200
+    
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notifications', methods=['POST'])
+@login_required
+def create_notification():
+    """Create new notification (send to another user)"""
+    try:
+        user = get_current_user()
+        data = request.get_json()
+        
+        recipient_id = data.get('recipient_id')
+        notification_type = data.get('notification_type')  # e.g., 'request_action', 'case_ready'
+        message = data.get('message')
+        patient_id = data.get('patient_id')
+        analysis_id = data.get('analysis_id')
+        
+        if not recipient_id or not notification_type or not message:
+            return jsonify({'success': False, 'error': 'recipient_id, notification_type, and message required'}), 400
+        
+        # Check if recipient exists
+        recipient = User.query.get(recipient_id)
+        if not recipient:
+            return jsonify({'success': False, 'error': 'Recipient not found'}), 404
+        
+        # Create notification
+        notification = Notification(
+            recipient_id=recipient_id,
+            sender_id=user.id,
+            notification_type=notification_type,
+            message=message,
+            patient_id=patient_id,
+            analysis_id=analysis_id
+        )
+        
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notification sent successfully',
+            'notification': notification.to_dict()
+        }), 201
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating notification: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notifications/<int:notification_id>', methods=['PUT'])
+@login_required
+def mark_notification_read(notification_id):
+    """Mark notification as read"""
+    try:
+        user = get_current_user()
+        notification = Notification.query.get(notification_id)
+        
+        if not notification:
+            return jsonify({'success': False, 'error': 'Notification not found'}), 404
+        
+        # Only recipient can mark as read
+        if notification.recipient_id != user.id:
+            return jsonify({'success': False, 'error': 'Cannot modify other user notifications'}), 403
+        
+        notification.is_read = True
+        notification.read_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notification marked as read',
+            'notification': notification.to_dict()
+        }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error marking notification read: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notifications/<int:notification_id>', methods=['DELETE'])
+@login_required
+def dismiss_notification(notification_id):
+    """Dismiss/delete notification"""
+    try:
+        user = get_current_user()
+        notification = Notification.query.get(notification_id)
+        
+        if not notification:
+            return jsonify({'success': False, 'error': 'Notification not found'}), 404
+        
+        # Only recipient can dismiss
+        if notification.recipient_id != user.id:
+            return jsonify({'success': False, 'error': 'Cannot modify other user notifications'}), 403
+        
+        notification.is_dismissed = True
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notification dismissed'
+        }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error dismissing notification: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+
 @app.route('/api/analyze', methods=['POST'])
+@login_required
+@role_required('nurse', 'doctor')
 def analyze_xray():
     """
     Receive X-ray image and clinical parameters, analyze, and save to database
@@ -161,9 +824,8 @@ def analyze_xray():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        # Read image file and encode as base64 for storage
+        # Read image file as binary (don't encode as base64)
         file_data = file.read()
-        image_b64 = base64.b64encode(file_data).decode('utf-8')
         
         # Get clinical parameters from form
         age = int(request.form.get('age', 0))
@@ -194,9 +856,11 @@ def analyze_xray():
         # Compute CURB-65 score
         curb_score_data = compute_curb65(age, confusion, urea, respiratory, sbp, dbp)
         
-        # Save analysis to database
+        # Save analysis to database with creator info
+        user = get_current_user()
         analysis = Analysis(
             patient_id=patient.id,
+            created_by_user_id=user.id,
             age=age,
             confusion=confusion,
             urea=urea,
@@ -208,11 +872,28 @@ def analyze_xray():
             curb_score=curb_score_data['score'],
             curb_risk=curb_score_data['risk'],
             image_filename=secure_filename(file.filename),
-            image_base64=image_b64
+            image_base64=file_data  # Store binary data directly
         )
         
         db.session.add(analysis)
         db.session.commit()
+        
+        # Auto-assign the uploader to this patient if not already assigned
+        user = get_current_user()
+        existing_assignment = PatientStaff.query.filter_by(
+            patient_id=patient.id,
+            user_id=user.id
+        ).first()
+        
+        if not existing_assignment:
+            assignment = PatientStaff(
+                patient_id=patient.id,
+                user_id=user.id,
+                role_type='assigned_nurse' if user.role == 'nurse' else 'primary_doctor',
+                assigned_by_user_id=user.id
+            )
+            db.session.add(assignment)
+            db.session.commit()
         
         # Prepare response
         response = {
@@ -225,7 +906,7 @@ def analyze_xray():
             'pneumonia_detected': analysis.pneumonia_detected,
             'confidence': analysis.confidence,
             'curb_score': curb_score_data,
-            'image_data': f"data:image/png;base64,{image_b64}"
+            'image_url': f"/api/image/{analysis.id}"
         }
         
         return jsonify(response), 200
@@ -292,14 +973,21 @@ def save_annotations():
         return jsonify({'error': str(e)}), 500
 
 
-
+@app.route('/api/download-report', methods=['POST'])
+@login_required
 def download_report():
     """
-    Generate and download a professional PDF report
-    Expects JSON: patient_name, medical_id, age, pneumonia_detected, confidence, curb_score
+    Generate and download a professional PDF report with X-ray image
+    Expects JSON: analysis_id, patient_name, medical_id, age, pneumonia_detected, confidence, curb_score, annotations
     """
     try:
         data = request.get_json()
+        analysis_id = data.get('analysis_id')
+        
+        # Retrieve analysis and image from database
+        analysis = None
+        if analysis_id:
+            analysis = Analysis.query.get(analysis_id)
         
         # Create PDF in memory
         pdf_buffer = BytesIO()
@@ -384,6 +1072,44 @@ def download_report():
         ]))
         elements.append(diagnosis_table)
         elements.append(Spacer(1, 0.2*inch))
+        
+        # X-Ray Image Section
+        if analysis and analysis.image_base64:
+            elements.append(Paragraph("DIAGNOSTIC X-RAY IMAGE", heading_style))
+            try:
+                # Convert binary image data to PIL Image
+                image_data = analysis.image_base64
+                if isinstance(image_data, bytes):
+                    img = Image.open(BytesIO(image_data))
+                else:
+                    img = Image.open(BytesIO(image_data.encode() if isinstance(image_data, str) else image_data))
+                
+                # Add image to PDF with proper sizing
+                # Convert PIL Image to ReportLab Image
+                img_buffer = BytesIO()
+                img.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+                
+                rl_image = RLImage(img_buffer, width=4.5*inch, height=3.5*inch)
+                elements.append(rl_image)
+                elements.append(Spacer(1, 0.2*inch))
+                
+                # Add caption
+                elements.append(Paragraph(
+                    "<i>Chest X-Ray Image for AI Diagnostic Analysis</i>",
+                    ParagraphStyle(
+                        'ImageCaption',
+                        parent=styles['Normal'],
+                        fontSize=9,
+                        textColor=colors.HexColor('#666666'),
+                        alignment=TA_CENTER
+                    )
+                ))
+                elements.append(Spacer(1, 0.2*inch))
+            except Exception as e:
+                print(f"Warning: Could not add image to PDF: {e}")
+                elements.append(Paragraph("<i>X-Ray image could not be embedded</i>", styles['Normal']))
+                elements.append(Spacer(1, 0.2*inch))
         
         # CURB-65 Risk Assessment Section
         elements.append(Paragraph("SEVERITY ASSESSMENT (CURB-65 SCORE)", heading_style))
@@ -511,6 +1237,46 @@ def download_report():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/image/<analysis_id>', methods=['GET'])
+@login_required
+def get_analysis_image(analysis_id):
+    """
+    Serve X-ray image from database (MEDIUMBLOB) with proper error handling
+    Supports hospital-grade reliability with logging
+    """
+    try:
+        analysis = Analysis.query.get(analysis_id)
+        if not analysis:
+            print(f"Image request: Analysis {analysis_id} not found")
+            return jsonify({'error': 'Analysis not found'}), 404
+        
+        image_data = analysis.image_base64
+        if not image_data:
+            print(f"Image request: Analysis {analysis_id} has no image data")
+            return jsonify({'error': 'No image data available'}), 404
+        
+        # Ensure data is bytes (LargeBinary should return bytes automatically)
+        if not isinstance(image_data, bytes):
+            print(f"WARNING: Image data is {type(image_data)}, converting to bytes")
+            image_data = image_data.encode() if isinstance(image_data, str) else bytes(image_data)
+        
+        print(f"✓ Serving image for analysis {analysis_id} ({len(image_data)} bytes)")
+        
+        # Serve the binary image data directly
+        return send_file(
+            BytesIO(image_data),
+            mimetype='image/png',
+            as_attachment=False,
+            download_name=f"xray_{analysis_id}.png"
+        )
+    
+    except Exception as e:
+        print(f"✗ Error retrieving image {analysis_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to retrieve image', 'details': str(e)}), 500
 
 
 # =====================================================================

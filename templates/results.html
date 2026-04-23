@@ -7,16 +7,30 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         /* Page-specific helpers for Results layout */
-        .results-grid { display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start; max-width:1100px }
-        .xray-card { padding:18px; display:flex; flex-direction:column; gap:16px }
-        .xray-frame { background:#fff; border-radius:12px; padding:18px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.04) }
-        .xray-frame img { max-width:520px; width:100%; border-radius:8px }
-        .ai-card { display:flex; flex-direction:column; gap:12px }
+        .results-grid { display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start; width:100% }
+        .xray-card { padding:18px; display:flex; flex-direction:column; gap:16px; height:fit-content }
+        .xray-frame { background:#fff; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.04); width:100%; min-width:0 }
+        .xray-frame img { max-width:100%; width:100%; height:auto; object-fit:contain; display:block }
+        .ai-card { display:flex; flex-direction:column; gap:12px; height:fit-content }
         .ai-card .section { background:#fff; border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04) }
         .ai-status { font-size:18px; font-weight:700; color:var(--danger) }
         .meta-small { font-size:13px; color:var(--text-light) }
         .annotations textarea { width:100%; min-height:120px; padding:12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa }
-        @media (max-width:900px){ .results-grid{ grid-template-columns: 1fr; } .xray-frame img{ max-width:100% } }
+        .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #007bff; color: #007bff; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 6px; transition: all 0.3s; }
+        .info-icon:hover { background: #007bff; color: white; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background-color: #fff; padding: 24px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto; }
+        .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #2c3e50; }
+        .modal-body { font-size: 14px; color: #555; line-height: 1.6; }
+        .modal-body strong { color: #2c3e50; }
+        .modal-body .score-item { margin: 12px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #007bff; }
+        .modal-body .risk-low { border-left-color: #28a745; }
+        .modal-body .risk-moderate { border-left-color: #ff9800; }
+        .modal-body .risk-high { border-left-color: #dc3545; }
+        .modal-close { float: right; font-size: 28px; font-weight: bold; color: #999; cursor: pointer; line-height: 1; }
+        .modal-close:hover { color: #000; }
+        @media (max-width:900px){ .results-grid{ grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -31,18 +45,20 @@
             </div>
             <nav class="nav-links">
                 <a href="{{ url_for('dashboard') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Dashboard"></span>Dashboard</a>
-                <a href="{{ url_for('new_analysis') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
+                <a href="{{ url_for('new_analysis') }}" id="newAnalysisLink"><span class="nav-icon"><img src="{{ url_for('static', filename='images/upload.png') }}" alt="New Analysis"></span>New Analysis</a>
                 <a href="{{ url_for('report') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/history.png') }}" alt="Patient History"></span>Patient History</a>
+                <a href="{{ url_for('management') }}" id="managementLink" style="display: none;"><span class="nav-icon"><img src="{{ url_for('static', filename='images/management.png') }}" alt="Management"></span>Management</a>
                 <a href="{{ url_for('alerts') }}"><span class="nav-icon"><img src="{{ url_for('static', filename='images/alerts.png') }}" alt="Alerts"></span>Alerts</a>
             </nav>
             <div class="user-info">
-                <div class="user-avatar">Dr</div>
+                <div class="user-avatar" id="userAvatarInitials">--</div>
                 <div class="user-details">
-                    <h3>Dr. Sarah Johnson</h3>
-                    <p>johannesric03@gmail.com</p>
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userEmail">...</p>
+                    <span id="userRole" style="display: block; font-size: 12px; color: #667eea; margin-top: 4px; text-transform: capitalize">--</span>
                 </div>
             </div>
-            <button class="logout-btn">Logout</button>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
         </aside>
 
         <main class="main-content">
@@ -74,7 +90,7 @@
 
                 <div class="results-grid">
                     <div class="xray-card">
-                        <div class="section xray-frame">
+                        <div class="xray-frame">
                             <img id="resultXray" src="https://via.placeholder.com/520x520.png?text=Chest+X-Ray" alt="Patient X-ray">
                         </div>
                     </div>
@@ -88,7 +104,10 @@
                                     <div style="font-size:13px; color:#95a5a6">Status:</div>
                                     <div class="ai-status" style="margin-top:6px" id="diagnosisStatus">LOADING...</div>
                                     <div style="margin-top:10px; color:#6c757d">Confidence:</div>
-                                    <div style="font-weight:700; margin-top:6px; font-size:18px" id="confidenceScore">—%</div>
+                                    <div style="display:flex; align-items:center; margin-top:6px;">
+                                        <div style="font-weight:700; font-size:18px" id="confidenceScore">—%</div>
+                                        <span class="info-icon" id="confidenceInfoBtn" title="What does this score mean?">i</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -96,7 +115,10 @@
                         <div class="section">
                             <h4 style="margin:0 0 6px">SEVERITY (CURB-65)</h4>
                             <div style="height:1px; background:#e9ecef; margin:8px 0 12px"></div>
-                            <div style="font-size:14px">Score: <strong id="resultCurb">—</strong></div>
+                            <div style="font-size:14px; display:flex; align-items:center;">
+                                Score: <strong id="resultCurb">—</strong>
+                                <span class="info-icon" id="curbInfoBtn" title="What does this CURB-65 score mean?">i</span>
+                            </div>
                             <div style="margin-top:8px; color:var(--danger); font-weight:700" id="riskLevel">Risk: —</div>
                             <div style="margin-top:8px; color:#6c757d" id="action">Action: —</div>
                         </div>
@@ -108,27 +130,27 @@
                     <p class="small-hint" style="margin-bottom:12px">Add clinical notes, diagnosis confirmation, and treatment recommendations</p>
 
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px">
-                        <input class="form-row" placeholder="Doctor Name" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa">
-                        <input class="form-row" placeholder="Final Diagnosis" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa">
+                        <input id="doctorName" class="form-row" placeholder="Doctor Name" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa">
+                        <input id="finalDiagnosis" class="form-row" placeholder="Final Diagnosis" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa">
                     </div>
 
                     <div style="margin-bottom:12px">
                         <label style="display:block; font-weight:600; margin-bottom:6px">Clinical Notes</label>
-                        <textarea placeholder="Enter detailed clinical observations, symptoms, and examination findings..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                        <textarea id="clinicalNotes" placeholder="Enter detailed clinical observations, symptoms, and examination findings..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
                     </div>
 
                     <div style="margin-bottom:12px">
                         <label style="display:block; font-weight:600; margin-bottom:6px">Treatment Plan</label>
-                        <textarea placeholder="Prescribed medications, dosages, and treatment duration..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                        <textarea id="treatmentPlan" placeholder="Prescribed medications, dosages, and treatment duration..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
                     </div>
 
                     <div style="margin-bottom:12px">
                         <label style="display:block; font-weight:600; margin-bottom:6px">Follow-up Instructions</label>
-                        <textarea placeholder="Next appointment, monitoring requirements, warning signs to watch for..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                        <textarea id="followUpInstructions" placeholder="Next appointment, monitoring requirements, warning signs to watch for..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
                     </div>
 
                     <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px">
-                        <button class="btn btn-outline">Save Annotations</button>
+                        <button id="saveAnnotationsBtn" class="btn btn-outline">Save Annotations</button>
                     </div>
 
                     <div style="height:1px; background:#e9ecef; margin:16px 0"></div>
@@ -142,7 +164,133 @@
         </main>
     </div>
 
+    <!-- Confidence Score Modal -->
+    <div id="confidenceModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="confidenceModalClose">&times;</span>
+            <div class="modal-header">AI Confidence Score Interpretation</div>
+            <div class="modal-body">
+                <p>The confidence score represents how clearly the AI model can see and identify pneumonia patterns in the X-ray. A higher score indicates clearer detection of pneumonia features.</p>
+                
+                <div class="score-item risk-low">
+                    <strong>0-40%: Low Confidence</strong><br>
+                    The X-ray findings are borderline or minimal. Result may show normal lung or subtle pneumonia features that are difficult to detect. Recommendation: Requires careful clinical review by physician. Consider repeat imaging or patient follow-up for symptom correlation.
+                </div>
+                
+                <div class="score-item risk-moderate">
+                    <strong>40-70%: Moderate Confidence</strong><br>
+                    The X-ray shows moderate signs of the detected condition. Findings are visible but not conclusive. Recommendation: Clinical correlation required. Review patient symptoms, vital signs, and imaging carefully before final diagnosis. Additional tests may be beneficial.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>70-85%: High Confidence</strong><br>
+                    The X-ray clearly shows pneumonia features. Strong radiological signs are present. Recommendation: High likelihood of pneumonia diagnosis supported by imaging. Proceed with clinical confirmation and treatment planning.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>85-99%: Very High Confidence</strong><br>
+                    The X-ray shows classic pneumonia findings with very clear patterns. Definitive radiological signs are evident. Recommendation: Strong pneumonia diagnosis confirmed by imaging. Immediate clinical assessment and treatment initiation recommended.
+                </div>
+                
+                <p style="margin-top: 12px; color: #666; font-size: 13px; background: #f0f0f0; padding: 10px; border-radius: 6px;">
+                    <strong>Note:</strong> AI score is an assistive diagnostic tool. Final clinical diagnosis must be made by qualified medical professionals considering patient history, symptoms, clinical examination, and all available diagnostic information.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CURB-65 Score Modal -->
+    <div id="curbModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="curbModalClose">&times;</span>
+            <div class="modal-header">CURB-65 Severity Score</div>
+            <div class="modal-body">
+                <p><strong>CURB-65</strong> is a clinical tool to assess pneumonia severity and mortality risk. Points are awarded for:</p>
+                <ul style="margin: 10px 0 10px 20px;">
+                    <li><strong>C</strong>onfusion (new onset mental status changes)</li>
+                    <li><strong>U</strong>rea >7 mmol/L (elevated blood urea)</li>
+                    <li><strong>R</strong>espiratory rate ≥30 breaths/min</li>
+                    <li><strong>B</strong>lood pressure (SBP <90 or DBP ≤60 mmHg)</li>
+                    <li><strong>65</strong> = Age ≥65 years</li>
+                </ul>
+                
+                <div class="score-item risk-low">
+                    <strong>Score 0-1: Low Risk</strong><br>
+                    Mortality risk: 1-2%<br>
+                    Recommendation: Outpatient treatment. Can manage safely at home with close follow-up.
+                </div>
+                
+                <div class="score-item risk-moderate">
+                    <strong>Score 2: Intermediate Risk</strong><br>
+                    Mortality risk: 9%<br>
+                    Recommendation: Consider hospitalization or close clinical supervision. May require IV antibiotics and monitoring.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>Score 3: High Risk</strong><br>
+                    Mortality risk: 15%<br>
+                    Recommendation: Hospitalization strongly recommended. Requires close monitoring and intensive care consideration.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>Score 4: Very High Risk</strong><br>
+                    Mortality risk: 40%<br>
+                    Recommendation: Hospitalization essential. ICU admission should be considered.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>Score 5: Severe Risk</strong><br>
+                    Mortality risk: 57%<br>
+                    Recommendation: ICU admission recommended. Requires intensive management and organ support.
+                </div>
+                
+                <p style="margin-top: 12px; color: #666; font-size: 13px; background: #f0f0f0; padding: 10px; border-radius: 6px;">
+                    <strong>Note:</strong> This score should be used alongside clinical judgment. Individual patient factors and comorbidities may affect management decisions.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Global variable to store analysis_id
+        let currentAnalysisId = null;
+
+        // Modal management
+        const confidenceModal = document.getElementById('confidenceModal');
+        const curbModal = document.getElementById('curbModal');
+        const confidenceInfoBtn = document.getElementById('confidenceInfoBtn');
+        const curbInfoBtn = document.getElementById('curbInfoBtn');
+        const confidenceModalClose = document.getElementById('confidenceModalClose');
+        const curbModalClose = document.getElementById('curbModalClose');
+
+        // Confidence score modal
+        confidenceInfoBtn?.addEventListener('click', () => {
+            confidenceModal.classList.add('active');
+        });
+
+        confidenceModalClose?.addEventListener('click', () => {
+            confidenceModal.classList.remove('active');
+        });
+
+        // CURB-65 modal
+        curbInfoBtn?.addEventListener('click', () => {
+            curbModal.classList.add('active');
+        });
+
+        curbModalClose?.addEventListener('click', () => {
+            curbModal.classList.remove('active');
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === confidenceModal) {
+                confidenceModal.classList.remove('active');
+            }
+            if (event.target === curbModal) {
+                curbModal.classList.remove('active');
+            }
+        });
+
         // Populate results from sessionStorage (filled by the API response)
         document.addEventListener('DOMContentLoaded', function(){
             try{
@@ -154,9 +302,13 @@
 
                 const result = JSON.parse(resultStr);
 
-                // Update image
-                if(result.image_data){
-                    document.getElementById('resultXray').src = result.image_data;
+                // Store analysis_id globally for later use
+                currentAnalysisId = result.analysis_id;
+
+                // Update image - fetch directly from dedicated image endpoint
+                if(result.image_url){
+                    const imgElement = document.getElementById('resultXray');
+                    imgElement.src = result.image_url;
                 }
 
                 // Update patient meta
@@ -177,6 +329,15 @@
                 // Update action
                 const action = result.curb_score.score >= 3 ? 'Hospitalize' : (result.curb_score.score >= 2 ? 'Monitor' : 'Outpatient care');
                 document.getElementById('action').textContent = 'Action: ' + action;
+
+                // Load annotations if they exist
+                if (result.annotations) {
+                    document.getElementById('doctorName').value = result.annotations.doctor_name || '';
+                    document.getElementById('finalDiagnosis').value = result.annotations.final_diagnosis || '';
+                    document.getElementById('clinicalNotes').value = result.annotations.clinical_notes || '';
+                    document.getElementById('treatmentPlan').value = result.annotations.treatment_plan || '';
+                    document.getElementById('followUpInstructions').value = result.annotations.follow_up_instructions || '';
+                }
 
             }catch(err){
                 console.warn('Unable to load analysis result:', err);
@@ -213,6 +374,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        analysis_id: result.analysis_id,
                         patient_name: result.patient_name,
                         medical_id: result.medical_id,
                         age: result.age,
@@ -247,6 +409,111 @@
                 console.error('Error:', error);
                 alert('Error downloading report: ' + error.message);
             }
+        });
+
+        // Save annotations handler
+        document.getElementById('saveAnnotationsBtn')?.addEventListener('click', async function(e){
+            e.preventDefault();
+            
+            if (!currentAnalysisId) {
+                alert('No analysis data found. Please complete an analysis first.');
+                return;
+            }
+            
+            try {
+                // Collect annotation data
+                const annotationData = {
+                    analysis_id: currentAnalysisId,
+                    doctor_name: document.getElementById('doctorName')?.value || '',
+                    final_diagnosis: document.getElementById('finalDiagnosis')?.value || '',
+                    clinical_notes: document.getElementById('clinicalNotes')?.value || '',
+                    treatment_plan: document.getElementById('treatmentPlan')?.value || '',
+                    follow_up_instructions: document.getElementById('followUpInstructions')?.value || ''
+                };
+
+                // Send to backend
+                const response = await fetch('/api/save-annotations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(annotationData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save annotations');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Annotations saved successfully!');
+                } else {
+                    alert('Error saving annotations: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error saving annotations:', error);
+                alert('Failed to save annotations. Please try again.');
+            }
+        });
+
+        // Load current user information
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    const user = result.user;
+                    
+                    // Update user avatar (initials)
+                    const names = user.name.split(' ');
+                    const initials = names.map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('userAvatarInitials').textContent = initials;
+                    
+                    // Update user details
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('userEmail').textContent = user.email;
+                    document.getElementById('userRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+                    
+                    // Update navigation based on role
+                    if (user.role === 'admin') {
+                        document.getElementById('newAnalysisLink').style.display = 'none';
+                        document.getElementById('managementLink').style.display = 'flex';
+                    } else {
+                        document.getElementById('newAnalysisLink').style.display = 'flex';
+                        document.getElementById('managementLink').style.display = 'none';
+                    }
+                } else {
+                    // Not logged in, redirect to login
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error logging out. Please try again.');
+                }
+            }
+        });
+
+        // Load user info on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
         });
     </script>
 </body>
