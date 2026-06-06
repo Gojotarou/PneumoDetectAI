@@ -2305,16 +2305,11 @@ def run_pneumonia_detection(image_data, age, confusion, urea, respiratory, sbp, 
         # Run inference
         prediction = pneumonia_model.predict(img_array, verbose=0)
         
-        # Extract pneumonia confidence (assuming binary classification)
-        # If model outputs [normal, pneumonia], take pneumonia probability
-        if len(prediction[0]) > 1:
-            # Binary classification: [normal_prob, pneumonia_prob]
-            pneumonia_confidence = float(prediction[0][1]) * 100
-        else:
-            # Single output: direct pneumonia probability
-            pneumonia_confidence = float(prediction[0][0]) * 100
+        # Extract pneumonia confidence from sigmoid output (0-1 scale)
+        # Model outputs single sigmoid value: 1.0 = pneumonia, 0.0 = normal
+        pneumonia_confidence = float(prediction[0][0]) * 100
         
-        # Threshold for detection (adjust as needed)
+        # Threshold for detection
         detected = pneumonia_confidence >= 50
         
         return {
