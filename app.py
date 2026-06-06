@@ -348,6 +348,7 @@ XRAY_VALIDATOR_THRESHOLD = float(os.getenv('XRAY_VALIDATOR_THRESHOLD', '0.5'))
 XRAY_POSITIVE_LABEL = os.getenv('XRAY_POSITIVE_LABEL', 'xray').strip().lower()  # 'xray' or 'non_xray'
 XRAY_CLASS_INDEX = int(os.getenv('XRAY_CLASS_INDEX', '1'))
 XRAY_VALIDATION_STRICT = os.getenv('XRAY_VALIDATION_STRICT', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
+GRADCAM_GENERATION_ENABLED = os.getenv('GRADCAM_GENERATION_ENABLED', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
 
 try:
     xray_validator_model = load_model(XRAY_VALIDATOR_MODEL_PATH)
@@ -1694,8 +1695,10 @@ def analyze_xray():
             file_data, age, confusion, urea, respiratory, sbp, dbp
         )
 
-        # Build Grad-CAM overlay from the same uploaded image and existing model.
-        gradcam_image_data = generate_gradcam_overlay(file_data, last_conv_layer_name='conv5_block16_concat')
+        # Grad-CAM is optional because generating it adds noticeable latency to analysis.
+        gradcam_image_data = None
+        if GRADCAM_GENERATION_ENABLED:
+            gradcam_image_data = generate_gradcam_overlay(file_data, last_conv_layer_name='conv5_block16_concat')
         
         # Compute CURB-65 score using criteria (0 or 1 values), NOT patient age
         curb_score_data = compute_curb65(age_criterion, confusion, urea, respiratory, sbp, dbp)
