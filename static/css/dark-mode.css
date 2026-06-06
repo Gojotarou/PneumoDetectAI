@@ -1,0 +1,1713 @@
+/* ========== DARK MODE OVERRIDES ========== */
+/* This file contains all dark mode specific styles to ensure proper contrast and visibility */
+
+body[data-theme="dark"] {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+/* Main Content Area */
+body[data-theme="dark"] .main-content {
+    background-color: #0f172a;
+}
+
+/* Headings - Ensure high contrast in dark mode */
+body[data-theme="dark"] h1,
+body[data-theme="dark"] h2,
+body[data-theme="dark"] h3,
+body[data-theme="dark"] h4,
+body[data-theme="dark"] h5,
+body[data-theme="dark"] h6 {
+    color: #f1f5f9 !important;
+}
+
+/* Paragraphs and text */
+body[data-theme="dark"] p,
+body[data-theme="dark"] span,
+body[data-theme="dark"] label,
+body[data-theme="dark"] div {
+    color: #cbd5e1;
+}
+
+/* Top Header */
+body[data-theme="dark"] .top-header {
+    background-color: #0f172a;
+    border-bottom-color: #334155;
+}
+
+body[data-theme="dark"] .top-header h1 {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .top-header p {
+    color: #94a3b8;
+}
+
+/* Cards */
+body[data-theme="dark"] .card {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] .card h3 {
+    color: #f1f5f9 !important;
+}
+
+/* Tables */
+body[data-theme="dark"] table {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+body[data-theme="dark"] th,
+body[data-theme="dark"] td {
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] th {
+    background-color: #334155;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] tr:hover {
+    background-color: #334155;
+}
+
+/* Form Elements */
+body[data-theme="dark"] input[type="text"],
+body[data-theme="dark"] input[type="email"],
+body[data-theme="dark"] input[type="password"],
+body[data-theme="dark"] input[type="number"],
+body[data-theme="dark"] textarea,
+body[data-theme="dark"] select {
+    background-color: #334155;
+    border-color: #475569;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] input::placeholder,
+body[data-theme="dark"] textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Buttons */
+body[data-theme="dark"] button {
+    color: inherit;
+}
+
+body[data-theme="dark"] .btn-primary,
+body[data-theme="dark"] button.btn-primary {
+    background-color: #38bdf8;
+    color: #0f172a !important;
+    border-color: #38bdf8;
+}
+
+body[data-theme="dark"] .btn-primary:hover {
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
+}
+
+body[data-theme="dark"] .btn-secondary {
+    background-color: #475569;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .btn-secondary:hover {
+    background-color: #64748b;
+}
+
+/* Links */
+body[data-theme="dark"] a {
+    color: #38bdf8;
+}
+
+body[data-theme="dark"] a:hover {
+    color: #0ea5e9;
+}
+
+/* Modal/Dialog */
+body[data-theme="dark"] .modal,
+body[data-theme="dark"] .dialog {
+    background-color: #1e293b;
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] .modal-header,
+body[data-theme="dark"] .dialog-header {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+body[data-theme="dark"] .modal-header h2,
+body[data-theme="dark"] .dialog-header h2 {
+    color: #f1f5f9 !important;
+}
+
+/* Alerts & Badges */
+body[data-theme="dark"] .alert {
+    background-color: #334155;
+    border-color: #475569;
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] .alert.alert-success {
+    background-color: #0c6940;
+    border-color: #22c55e;
+    color: #22c55e;
+}
+
+body[data-theme="dark"] .alert.alert-danger {
+    background-color: #7f1d1d;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+body[data-theme="dark"] .alert.alert-warning {
+    background-color: #78350f;
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+body[data-theme="dark"] .alert.alert-info {
+    background-color: #3f0f5c;
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+}
+
+body[data-theme="dark"] .badge {
+    background-color: #475569;
+    color: #f1f5f9;
+}
+
+/* Dropdowns */
+body[data-theme="dark"] .dropdown-menu {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+body[data-theme="dark"] .dropdown-menu a,
+body[data-theme="dark"] .dropdown-menu button {
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] .dropdown-menu a:hover,
+body[data-theme="dark"] .dropdown-menu button:hover {
+    background-color: #334155;
+    color: #f1f5f9;
+}
+
+/* Code blocks */
+body[data-theme="dark"] code,
+body[data-theme="dark"] pre {
+    background-color: #334155;
+    color: #f1f5f9;
+    border-color: #475569;
+}
+
+/* Sidebar items - ensure contrast */
+body[data-theme="dark"] .sidebar .nav-links a {
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] .sidebar .nav-links a:hover,
+body[data-theme="dark"] .sidebar .nav-links a.active {
+    color: #38bdf8;
+    background-color: #334155;
+}
+
+/* User info section */
+body[data-theme="dark"] .user-info h3 {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .user-info p {
+    color: #94a3b8;
+}
+
+/* Notification badges */
+body[data-theme="dark"] .notification-badge {
+    background-color: #ef4444;
+    color: #ffffff;
+}
+
+/* Stat cards */
+body[data-theme="dark"] .stat-card {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+body[data-theme="dark"] .stat-card h4,
+body[data-theme="dark"] .stat-card .stat-value {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .stat-card .stat-label {
+    color: #94a3b8;
+}
+
+/* Pills/Tags */
+body[data-theme="dark"] .pill,
+body[data-theme="dark"] .tag {
+    background-color: #334155;
+    color: #cbd5e1;
+    border-color: #475569;
+}
+
+/* Lists */
+body[data-theme="dark"] .list-item {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] .list-item:hover {
+    background-color: #334155;
+}
+
+/* Tabs */
+body[data-theme="dark"] .tab-btn {
+    color: #cbd5e1;
+    border-bottom-color: transparent;
+}
+
+body[data-theme="dark"] .tab-btn.active,
+body[data-theme="dark"] .tab-btn:hover {
+    color: #38bdf8;
+    border-bottom-color: #38bdf8;
+}
+
+/* Progress bars */
+body[data-theme="dark"] .progress {
+    background-color: #334155;
+}
+
+body[data-theme="dark"] .progress-bar {
+    background-color: #38bdf8;
+}
+
+/* Stepper - 3 Step Progress Indicator */
+body[data-theme="dark"] .stepper {
+    /* stepper container styling */
+}
+
+body[data-theme="dark"] .step .circle {
+    background-color: #334155;
+    color: #cbd5e1;
+    border: 2px solid #475569;
+}
+
+body[data-theme="dark"] .step .label {
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] .step.active .circle {
+    background-color: #38bdf8;
+    color: #0f172a;
+    border-color: #38bdf8;
+}
+
+body[data-theme="dark"] .step-sep {
+    background-color: #475569;
+}
+
+/* Scrollbars */
+body[data-theme="dark"] ::-webkit-scrollbar {
+    background-color: #1e293b;
+}
+
+body[data-theme="dark"] ::-webkit-scrollbar-track {
+    background-color: #0f172a;
+}
+
+body[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background-color: #475569;
+}
+
+body[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b;
+}
+
+/* Metric Cards - Patient History Page */
+body[data-theme="dark"] .metric-card {
+    background-color: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body[data-theme="dark"] .metric-card h3 {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .metric-value {
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .metric-icon {
+    background-color: rgba(56, 189, 248, 0.1);
+}
+
+body[data-theme="dark"] .metric-icon.blue {
+    background-color: rgba(56, 189, 248, 0.15);
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .metric-icon.red {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444 !important;
+}
+
+body[data-theme="dark"] .metric-icon.green {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #22c55e !important;
+}
+
+/* Action Buttons - View/Delete */
+body[data-theme="dark"] .action-btn {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #cbd5e1 !important;
+    transition: all 0.2s;
+}
+
+body[data-theme="dark"] .action-btn:hover {
+    background-color: #475569 !important;
+    border-color: #64748b !important;
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .action-btn.delete:hover {
+    background-color: #7f1d1d !important;
+    border-color: #ef4444 !important;
+    color: #fca5a5 !important;
+}
+
+/* Back to Dashboard Button */
+body[data-theme="dark"] .back-btn {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .back-btn:hover {
+    background-color: #475569 !important;
+    border-color: #64748b !important;
+}
+
+/* Diagnosis Badges */
+body[data-theme="dark"] .diagnosis-badge {
+    font-weight: 600;
+}
+
+body[data-theme="dark"] .diagnosis-badge.pneumonia {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border: 1px solid #b91c1c;
+}
+
+body[data-theme="dark"] .diagnosis-badge.normal {
+    background-color: #1f3a1f !important;
+    color: #86efac !important;
+    border: 1px solid #16a34a;
+}
+
+/* Confidence Badges */
+body[data-theme="dark"] .confidence-badge {
+    font-weight: 600;
+}
+
+body[data-theme="dark"] .confidence-badge.high {
+    background-color: #1e3a8a !important;
+    color: #93c5fd !important;
+    border: 1px solid #1d4ed8;
+}
+
+body[data-theme="dark"] .confidence-badge.medium {
+    background-color: #7c2d12 !important;
+    color: #fdba74 !important;
+    border: 1px solid #d97706;
+}
+
+body[data-theme="dark"] .confidence-badge.low {
+    background-color: #374151 !important;
+    color: #d1d5db !important;
+    border: 1px solid #6b7280;
+}
+
+/* Severity Badges */
+body[data-theme="dark"] .severity-badge {
+    font-weight: 600;
+    border: 1px solid;
+}
+
+body[data-theme="dark"] .severity-badge.score-0,
+body[data-theme="dark"] .severity-badge.score-1 {
+    background-color: #1f3a1f !important;
+    color: #86efac !important;
+    border-color: #16a34a;
+}
+
+body[data-theme="dark"] .severity-badge.score-2 {
+    background-color: #78350f !important;
+    color: #fcd34d !important;
+    border-color: #f59e0b;
+}
+
+body[data-theme="dark"] .severity-badge.score-3 {
+    background-color: #7c2d12 !important;
+    color: #fdba74 !important;
+    border-color: #f97316;
+}
+
+body[data-theme="dark"] .severity-badge.score-4 {
+    background-color: #831843 !important;
+    color: #fbcfe8 !important;
+    border-color: #ec4899;
+}
+
+body[data-theme="dark"] .severity-badge.score-5 {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border-color: #b91c1c;
+}
+
+/* Dashboard Stat Cards - Icon Colors */
+body[data-theme="dark"] .stat-icon.blue {
+    background-color: rgba(56, 189, 248, 0.2) !important;
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .stat-icon.green {
+    background-color: rgba(34, 197, 94, 0.2) !important;
+    color: #22c55e !important;
+}
+
+body[data-theme="dark"] .stat-icon.orange {
+    background-color: rgba(249, 115, 22, 0.2) !important;
+    color: #f97316 !important;
+}
+
+body[data-theme="dark"] .stat-icon.red {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+}
+
+/* Dashboard Stat Title and Value */
+body[data-theme="dark"] .stat-title {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .stat-value {
+    color: #f1f5f9 !important;
+}
+
+/* Case Severity Status Badges */
+body[data-theme="dark"] .case-severity {
+    font-weight: 600;
+    border: 1px solid;
+}
+
+body[data-theme="dark"] .case-severity.critical {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border-color: #b91c1c;
+}
+
+body[data-theme="dark"] .case-severity.moderate {
+    background-color: #7c2d12 !important;
+    color: #fdba74 !important;
+    border-color: #f97316;
+}
+
+body[data-theme="dark"] .case-severity.low-risk {
+    background-color: #1f3a1f !important;
+    color: #86efac !important;
+    border-color: #16a34a;
+}
+
+/* Alerts Page - Metric Cards */
+body[data-theme="dark"] .alert-metric-card {
+    background-color: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body[data-theme="dark"] .alert-metric-card h3 {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .alert-metric-value {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .alert-metric-icon {
+    background-color: rgba(56, 189, 248, 0.1);
+}
+
+body[data-theme="dark"] .alert-metric-icon.critical {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+}
+
+body[data-theme="dark"] .alert-metric-icon.moderate {
+    background-color: rgba(249, 115, 22, 0.2) !important;
+    color: #f97316 !important;
+}
+
+body[data-theme="dark"] .alert-metric-icon.progress {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    color: #3b82f6 !important;
+}
+
+body[data-theme="dark"] .alert-metric-icon.resolved {
+    background-color: rgba(34, 197, 94, 0.2) !important;
+    color: #22c55e !important;
+}
+
+/* Alert Cards */
+body[data-theme="dark"] .alert-card {
+    background-color: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body[data-theme="dark"] .alert-card.critical {
+    border-left-color: #ef4444 !important;
+}
+
+body[data-theme="dark"] .alert-card.moderate {
+    border-left-color: #f97316 !important;
+}
+
+body[data-theme="dark"] .alert-card.low {
+    border-left-color: #22c55e !important;
+}
+
+/* Alert Badges */
+body[data-theme="dark"] .alert-badge {
+    font-weight: 700;
+}
+
+body[data-theme="dark"] .alert-badge.critical {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border: 1px solid #b91c1c;
+}
+
+body[data-theme="dark"] .alert-badge.moderate {
+    background-color: #7c2d12 !important;
+    color: #fdba74 !important;
+    border: 1px solid #d97706;
+}
+
+body[data-theme="dark"] .alert-badge.low {
+    background-color: #1f3a1f !important;
+    color: #86efac !important;
+    border: 1px solid #16a34a;
+}
+
+/* Alert Title */
+body[data-theme="dark"] .alert-title {
+    color: #f1f5f9 !important;
+}
+
+/* Alert Info */
+body[data-theme="dark"] .alert-info-label {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .alert-info-value {
+    color: #f1f5f9 !important;
+}
+
+/* Alert Severity Section */
+body[data-theme="dark"] .alert-severity-label {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .alert-severity-bar {
+    background-color: #334155 !important;
+}
+
+body[data-theme="dark"] .alert-severity-thumb {
+    background-color: #1e293b !important;
+    border-color: #ef4444 !important;
+}
+
+/* Alert Action Required */
+body[data-theme="dark"] .alert-action-required {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border: 1px solid #b91c1c;
+}
+
+/* Alert Buttons */
+body[data-theme="dark"] .alert-btn.notify {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border: 1px solid #b91c1c;
+}
+
+body[data-theme="dark"] .alert-btn.notify:hover {
+    background-color: #991b1b !important;
+    color: #fecaca !important;
+}
+
+body[data-theme="dark"] .alert-btn.view {
+    background-color: #1e3a8a !important;
+    color: #93c5fd !important;
+    border: 1px solid #1d4ed8;
+}
+
+body[data-theme="dark"] .alert-btn.view:hover {
+    background-color: #1e40af !important;
+    color: #bfdbfe !important;
+}
+
+/* Alert Tabs */
+body[data-theme="dark"] .alert-tab {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .alert-tab.active {
+    color: #38bdf8 !important;
+    border-bottom-color: #38bdf8 !important;
+}
+
+/* Alert Info - Acknowledged Tab Readability */
+body[data-theme="dark"] .alert-info-row {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .alert-info-label {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .alert-info-value {
+    color: #f1f5f9 !important;
+}
+
+/* Alert Info in Acknowledged Alerts */
+body[data-theme="dark"] .alert-info-row[style*="color: #4caf50"] {
+    color: #86efac !important;
+}
+
+/* Alert Message Text */
+body[data-theme="dark"] .alert-card p {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .alert-card strong {
+    color: #f1f5f9 !important;
+}
+
+/* Alert Tabs Container Separator */
+body[data-theme="dark"] div[style*="border-bottom: 2px solid #e9ecef"] {
+    border-bottom-color: #334155 !important;
+}
+
+/* Alert Tab Styling */
+body[data-theme="dark"] .alert-tab {
+    color: #94a3b8 !important;
+}
+
+body[data-theme="dark"] .alert-tab:not(.active) {
+    border-bottom-color: transparent !important;
+    color: #94a3b8 !important;
+}
+
+body[data-theme="dark"] .alert-tab[style*="color: #999"] {
+    color: #94a3b8 !important;
+}
+
+/* Alert Tabs - Dark Mode */
+body[data-theme="dark"] .alert-tab {
+    transition: all 0.3s ease !important;
+}
+
+body[data-theme="dark"] .alert-tab.active {
+    color: #38bdf8 !important;
+    border-bottom-color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .alert-tab:not(.active) {
+    color: #94a3b8 !important;
+    border-bottom-color: transparent !important;
+}
+
+/* Sidebar User Info Border */
+body[data-theme="dark"] .sidebar .user-info {
+    border-top-color: #334155 !important;
+}
+
+/* ========== NEW ANALYSIS UPLOAD PAGE ========== */
+
+/* Upload Zone */
+body[data-theme="dark"] .upload-zone {
+    border-color: #334155 !important;
+    background-color: #1e293b !important;
+}
+
+body[data-theme="dark"] .upload-zone p {
+    color: #94a3b8 !important;
+}
+
+/* Browse Files Button */
+body[data-theme="dark"] .btn.btn-outline {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .btn.btn-outline:hover {
+    background-color: #475569 !important;
+    color: #38bdf8 !important;
+}
+
+/* Delete Image Button */
+body[data-theme="dark"] #deleteImageBtn {
+    background-color: #7f1d1d !important;
+    border-color: #b91c1c !important;
+}
+
+body[data-theme="dark"] #deleteImageBtn:hover {
+    background-color: #991b1b !important;
+}
+
+/* CURB-65 Clinical Input */
+body[data-theme="dark"] .form-row label {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .confusion-toggle button {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #cbd5e1 !important;
+    transition: all 0.2s;
+}
+
+body[data-theme="dark"] .confusion-toggle button:hover {
+    background-color: #475569 !important;
+    border-color: #64748b !important;
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .confusion-toggle button.selected {
+    background-color: #38bdf8 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+}
+
+/* CURB Score Display */
+body[data-theme="dark"] #curbScore {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #334155 !important;
+}
+
+/* ========== RESULTS PAGE ========== */
+
+/* X-Ray Frame */
+body[data-theme="dark"] .xray-frame {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* AI Card Section */
+body[data-theme="dark"] .ai-card .section {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body[data-theme="dark"] .ai-card h3 {
+    color: #f1f5f9 !important;
+}
+
+/* AI Status Text */
+body[data-theme="dark"] .ai-status {
+    color: #ef4444 !important;
+}
+
+/* Meta Small Text */
+body[data-theme="dark"] .meta-small {
+    color: #94a3b8 !important;
+}
+
+/* Annotations Textarea */
+body[data-theme="dark"] .annotations textarea {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .annotations textarea::placeholder {
+    color: #64748b;
+}
+
+body[data-theme="dark"] .annotations textarea:focus {
+    border-color: #38bdf8 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+}
+
+/* Info Icon */
+body[data-theme="dark"] .info-icon {
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .info-icon:hover {
+    background-color: #38bdf8 !important;
+    color: #0f172a !important;
+}
+
+/* Modal Styles */
+body[data-theme="dark"] .modal {
+    background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+body[data-theme="dark"] .modal-content {
+    background-color: #1e293b !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+body[data-theme="dark"] .modal-header {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .modal-body {
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .modal-body strong {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .modal-body .score-item {
+    background-color: #334155 !important;
+    border-left-color: #38bdf8 !important;
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .modal-body .risk-low {
+    border-left-color: #22c55e !important;
+}
+
+body[data-theme="dark"] .modal-body .risk-moderate {
+    border-left-color: #f97316 !important;
+}
+
+body[data-theme="dark"] .modal-body .risk-high {
+    border-left-color: #ef4444 !important;
+}
+
+body[data-theme="dark"] .modal-close {
+    color: #94a3b8 !important;
+}
+
+body[data-theme="dark"] .modal-close:hover {
+    color: #f1f5f9 !important;
+}
+
+/* Card and Card Body - for form sections */
+body[data-theme="dark"] .card-body {
+    background-color: #1e293b !important;
+}
+
+body[data-theme="dark"] .card h3 {
+    color: #f1f5f9 !important;
+}
+
+/* Form Row Elements */
+body[data-theme="dark"] .form-row {
+    color: #cbd5e1 !important;
+}
+
+/* Meta Row Text */
+body[data-theme="dark"] .meta-row {
+    color: #cbd5e1 !important;
+}
+
+/* Small Hint Text */
+body[data-theme="dark"] .small-hint {
+    color: #94a3b8 !important;
+}
+
+/* Analyze CTA Button */
+body[data-theme="dark"] .analyze-cta {
+    background-color: #38bdf8 !important;
+    color: #0f172a !important;
+}
+
+body[data-theme="dark"] .analyze-cta:hover {
+    background-color: #0284c7 !important;
+}
+
+/* Upload Text */
+body[data-theme="dark"] #uploadText {
+    color: #cbd5e1 !important;
+}
+
+/* Doctor Annotations Input Fields */
+body[data-theme="dark"] #doctorName,
+body[data-theme="dark"] #finalDiagnosis,
+body[data-theme="dark"] #clinicalNotes,
+body[data-theme="dark"] #treatmentPlan,
+body[data-theme="dark"] #followUpInstructions {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] #doctorName::placeholder,
+body[data-theme="dark"] #finalDiagnosis::placeholder,
+body[data-theme="dark"] #clinicalNotes::placeholder,
+body[data-theme="dark"] #treatmentPlan::placeholder,
+body[data-theme="dark"] #followUpInstructions::placeholder {
+    color: #64748b;
+}
+
+body[data-theme="dark"] #doctorName:focus,
+body[data-theme="dark"] #finalDiagnosis:focus,
+body[data-theme="dark"] #clinicalNotes:focus,
+body[data-theme="dark"] #treatmentPlan:focus,
+body[data-theme="dark"] #followUpInstructions:focus {
+    border-color: #38bdf8 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1) !important;
+}
+
+/* Separator Lines in Dark Mode */
+body[data-theme="dark"] div[style*="height:1px"] {
+    background-color: #334155 !important;
+}
+
+/* ========== ADMIN UI STYLES ========== */
+
+/* User Item Cards - Dashboard User Management */
+body[data-theme="dark"] .user-item {
+    background-color: #1e293b !important;
+    border-left-color: #38bdf8 !important;
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .user-item:hover {
+    background-color: #334155 !important;
+}
+
+body[data-theme="dark"] .user-item-name {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .user-item-name svg {
+    color: #38bdf8 !important;
+    stroke: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .user-item-role {
+    color: #94a3b8 !important;
+}
+
+body[data-theme="dark"] .user-item-date {
+    color: #64748b !important;
+}
+
+/* Role Stat Cards - Staff by Role */
+body[data-theme="dark"] .role-stat {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+body[data-theme="dark"] .role-stat-icon {
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .role-stat-icon svg {
+    color: #38bdf8 !important;
+    stroke: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .role-stat-count {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .role-stat-label {
+    color: #94a3b8 !important;
+}
+
+/* Stat Boxes - Management Page */
+body[data-theme="dark"] .stat-box {
+    background-color: #1e293b !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid #334155 !important;
+}
+
+body[data-theme="dark"] .stat-number {
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .stat-label {
+    color: #cbd5e1 !important;
+}
+
+/* Table Styles - Management Page */
+body[data-theme="dark"] .table-responsive {
+    background-color: #1e293b !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body[data-theme="dark"] thead tr {
+    background-color: #334155 !important;
+}
+
+body[data-theme="dark"] th {
+    color: #f1f5f9 !important;
+    border-bottom-color: #475569 !important;
+}
+
+body[data-theme="dark"] td {
+    color: #cbd5e1 !important;
+    border-bottom-color: #334155 !important;
+}
+
+body[data-theme="dark"] tbody tr:hover {
+    background-color: #334155 !important;
+}
+
+/* Badge Styles - Doctor/Nurse/Admin */
+body[data-theme="dark"] .badge-doctor {
+    background-color: #1e3a8a !important;
+    color: #93c5fd !important;
+}
+
+body[data-theme="dark"] .badge-nurse {
+    background-color: #4c1d95 !important;
+    color: #d8b4fe !important;
+}
+
+body[data-theme="dark"] .badge-admin {
+    background-color: #78350f !important;
+    color: #fcd34d !important;
+}
+
+/* Delete Button - Red in Dark Mode */
+body[data-theme="dark"] .btn-delete {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border-color: #b91c1c !important;
+}
+
+body[data-theme="dark"] .btn-delete:hover {
+    background-color: #991b1b !important;
+    color: #ffffff !important;
+}
+
+body[data-theme="dark"] .btn-delete:active {
+    transform: scale(0.98);
+}
+
+/* Action Button Styles */
+body[data-theme="dark"] .action-btn {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .action-btn:hover {
+    background-color: #475569 !important;
+    border-color: #64748b !important;
+}
+
+body[data-theme="dark"] .action-btn.delete {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+}
+
+body[data-theme="dark"] .action-btn.delete:hover {
+    background-color: #991b1b !important;
+    color: #ffffff !important;
+}
+
+/* Tabs Container */
+body[data-theme="dark"] .tabs-container {
+    border-bottom-color: #334155 !important;
+}
+
+/* Tab Button Styles */
+body[data-theme="dark"] .tab-btn {
+    color: #cbd5e1 !important;
+    border-bottom-color: transparent !important;
+}
+
+body[data-theme="dark"] .tab-btn:hover {
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .tab-btn.active {
+    color: #38bdf8 !important;
+    border-bottom-color: #38bdf8 !important;
+}
+
+/* Empty State Text */
+body[data-theme="dark"] .empty-state {
+    color: #94a3b8 !important;
+}
+
+/* ========== MANAGEMENT PAGE STYLES ========== */
+
+/* Form Section Containers */
+body[data-theme="dark"] .form-section,
+body[data-theme="dark"] [class*="section"] {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+
+/* Form Groups */
+body[data-theme="dark"] .form-group {
+    background-color: #1e293b !important;
+}
+
+body[data-theme="dark"] .form-group label {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .form-group input,
+body[data-theme="dark"] .form-group select,
+body[data-theme="dark"] .form-group textarea {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .form-group input::placeholder,
+body[data-theme="dark"] .form-group select::placeholder {
+    color: #94a3b8 !important;
+}
+
+body[data-theme="dark"] .form-group input:focus,
+body[data-theme="dark"] .form-group select:focus,
+body[data-theme="dark"] .form-group textarea:focus {
+    border-color: #38bdf8 !important;
+    outline: none;
+}
+
+/* Select/Dropdown Elements */
+body[data-theme="dark"] select {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] select option {
+    background-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] select:focus {
+    border-color: #38bdf8 !important;
+    outline: none;
+}
+
+/* User role select/dropdown (management page - only applies when it's a select element) */
+body[data-theme="dark"] select#userRole {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] select#userRole:focus {
+    border-color: #38bdf8 !important;
+}
+
+/* Role badge span — admin/doctor/nurse colors override the ID rule above */
+body[data-theme="dark"] span#userRole.role-admin,
+body[data-theme="dark"] span.user-role.role-admin {
+    background-color: #7c2d12 !important;
+    color: #fed7aa !important;
+    border-color: transparent !important;
+}
+
+body[data-theme="dark"] span#userRole.role-doctor,
+body[data-theme="dark"] span.user-role.role-doctor {
+    background-color: #164e63 !important;
+    color: #38bdf8 !important;
+    border-color: transparent !important;
+}
+
+body[data-theme="dark"] span#userRole.role-nurse,
+body[data-theme="dark"] span.user-role.role-nurse {
+    background-color: #581c87 !important;
+    color: #d8b4fe !important;
+    border-color: transparent !important;
+}
+
+/* Department dropdown */
+body[data-theme="dark"] #department {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] #department option {
+    background-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] #department:focus {
+    border-color: #38bdf8 !important;
+}
+
+/* Clear Form Button */
+body[data-theme="dark"] button[type="reset"],
+body[data-theme="dark"] .btn-reset,
+body[data-theme="dark"] [class*="clear"] {
+    background-color: #475569 !important;
+    color: #f1f5f9 !important;
+    border-color: #64748b !important;
+}
+
+body[data-theme="dark"] button[type="reset"]:hover,
+body[data-theme="dark"] .btn-reset:hover {
+    background-color: #64748b !important;
+    color: #f1f5f9 !important;
+}
+
+/* Separator Lines - Multiple Selectors */
+body[data-theme="dark"] hr {
+    border-color: #334155 !important;
+}
+
+body[data-theme="dark"] .separator {
+    background-color: #334155 !important;
+    border-color: #334155 !important;
+}
+
+body[data-theme="dark"] div[style*="border-bottom:"] {
+    border-bottom-color: #334155 !important;
+}
+
+body[data-theme="dark"] div[style*="border-bottom: "] {
+    border-bottom-color: #334155 !important;
+}
+
+body[data-theme="dark"] div[style*="border-top:"] {
+    border-top-color: #334155 !important;
+}
+
+body[data-theme="dark"] div[style*="border-top: "] {
+    border-top-color: #334155 !important;
+}
+
+body[data-theme="dark"] p[style*="border-bottom:"],
+body[data-theme="dark"] p[style*="border-bottom: "] {
+    border-bottom-color: #334155 !important;
+}
+
+/* User Management Section */
+body[data-theme="dark"] .user-mgmt-section {
+    border-bottom: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border: none !important;
+    padding-bottom: 16px !important;
+}
+
+body[data-theme="dark"] .user-mgmt-section h3 {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .user-mgmt-actions {
+    background-color: transparent;
+}
+
+/* Recent Users List - Remove table appearance */
+body[data-theme="dark"] .recent-users-list {
+    background-color: transparent;
+    border: none !important;
+}
+
+body[data-theme="dark"] .user-item {
+    border-bottom: none !important;
+    border-top: none !important;
+    border-left: 3px solid #38bdf8 !important;
+    border-right: none !important;
+}
+
+/* Role Stat Box - Remove borders */
+body[data-theme="dark"] .role-stat {
+    border: none !important;
+}
+
+/* Staff breakdown cards */
+body[data-theme="dark"] .staff-breakdown {
+    border: none !important;
+}
+
+/* Remove all light-colored borders from user management area */
+body[data-theme="dark"] [style*="border: 1px solid #e8e8e8"] {
+    border: none !important;
+}
+
+body[data-theme="dark"] [style*="border-bottom: 1px solid #f0f0f0"] {
+    border-bottom: none !important;
+}
+
+/* ========== USER ROLE BADGES - Dark Mode Override ========== */
+/* These override the broad span color rule to show proper role badge colors */
+/* Highest specificity to ensure role badges display correctly */
+
+body[data-theme="dark"] .user-role {
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-block;
+}
+
+/* Override for all role types - targeting both .user-role and span.user-role */
+body[data-theme="dark"] .sidebar .user-info .user-role {
+    background-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .sidebar .user-info .user-role.role-doctor {
+    background-color: #164e63 !important;
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .sidebar .user-info .user-role.role-nurse {
+    background-color: #581c87 !important;
+    color: #d8b4fe !important;
+}
+
+body[data-theme="dark"] .sidebar .user-info .user-role.role-admin {
+    background-color: #7c2d12 !important;
+    color: #fed7aa !important;
+}
+
+/* Also target span specifically for maximum specificity */
+body[data-theme="dark"] span.user-role.role-doctor {
+    background: #164e63 !important;
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] span.user-role.role-nurse {
+    background: #581c87 !important;
+    color: #d8b4fe !important;
+}
+
+body[data-theme="dark"] span.user-role.role-admin {
+    background: #7c2d12 !important;
+    color: #fed7aa !important;
+}
+
+/* User Management Card - Remove borders except dark theme */
+body[data-theme="dark"] #userManagementCard {
+    border-color: transparent !important;
+}
+
+/* Remove card-header border in dark mode - ALL card headers */
+body[data-theme="dark"] .card-header {
+    border-bottom: none !important;
+    border: none !important;
+    border-color: transparent !important;
+}
+
+body[data-theme="dark"] #userManagementCard .card-header {
+    border-bottom: none !important;
+    border: none !important;
+    border-color: transparent !important;
+}
+
+/* User Management Card - Remove ALL borders */
+body[data-theme="dark"] #userManagementCard {
+    border: none !important;
+    border-color: transparent !important;
+}
+
+body[data-theme="dark"] #userManagementCard.card {
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Recent Users List - Remove ALL borders */
+body[data-theme="dark"] .recent-users-list {
+    background-color: transparent;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* User Item with Shadow - Dashboard Management */
+body[data-theme="dark"] .user-item {
+    background-color: #1e293b !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    border: none !important;
+    border-left: 3px solid #38bdf8 !important;
+}
+
+body[data-theme="dark"] .user-item:hover {
+    background-color: #334155 !important;
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2) !important;
+}
+
+/* Role Stat Box with Shadow */
+body[data-theme="dark"] .role-stat {
+    background-color: #1e293b !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    border: none !important;
+}
+
+body[data-theme="dark"] .role-stat:hover {
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15) !important;
+}
+
+/* Badge styling for roles - Management page */
+body[data-theme="dark"] .badge {
+    background-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .badge-doctor {
+    background-color: #1e3a8a !important;
+    color: #93c5fd !important;
+}
+
+body[data-theme="dark"] .badge-nurse {
+    background-color: #4c1d95 !important;
+    color: #d8b4fe !important;
+}
+
+body[data-theme="dark"] .badge-admin {
+    background-color: #78350f !important;
+    color: #fcd34d !important;
+}
+
+/* Remove fieldset borders in dark mode - keep layout intact */
+body[data-theme="dark"] fieldset {
+    border: none !important;
+}
+
+body[data-theme="dark"] .form-section {
+    border: none !important;
+}
+
+/* ========== ADD USER FORM - ROLE SELECTION ========== */
+
+/* Role selection cards - remove white background */
+body[data-theme="dark"] .role-label {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+    color: #cbd5e1 !important;
+}
+
+body[data-theme="dark"] .role-option input[type="radio"]:checked + .role-label {
+    background-color: #334155 !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
+}
+
+body[data-theme="dark"] .role-label:hover {
+    background-color: #334155 !important;
+    border-color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .role-icon {
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .role-option input[type="radio"]:checked + .role-label .role-icon {
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .role-option:hover .role-label .role-icon {
+    color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] .role-info strong {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .role-info small {
+    color: #94a3b8 !important;
+}
+
+/* Form header separator lines */
+body[data-theme="dark"] .form-header {
+    border-bottom-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .form-header h2 {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .form-header p {
+    color: #cbd5e1 !important;
+}
+
+/* Add user card */
+body[data-theme="dark"] .add-user-card {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+
+/* All separator lines in management page */
+body[data-theme="dark"] .tabs-container {
+    border-bottom-color: #334155 !important;
+}
+
+body[data-theme="dark"] [style*="border-bottom: 1px solid #e9ecef"],
+body[data-theme="dark"] [style*="border-bottom:1px solid #e9ecef"] {
+    border-bottom-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+/* Catch all light colored borders and convert to dark */
+body[data-theme="dark"] [style*="border-bottom: 2px solid #e0e5f0"],
+body[data-theme="dark"] [style*="border-bottom:2px solid #e0e5f0"],
+body[data-theme="dark"] [style*="border-bottom: 2px solid #f0f0f0"],
+body[data-theme="dark"] [style*="border-bottom:2px solid #f0f0f0"],
+body[data-theme="dark"] [style*="border-bottom: 1px solid #e0e5f0"],
+body[data-theme="dark"] [style*="border-bottom:1px solid #e0e5f0"],
+body[data-theme="dark"] [style*="border-bottom: 1px solid #f0f0f0"],
+body[data-theme="dark"] [style*="border-bottom:1px solid #f0f0f0"] {
+    border-bottom-color: #334155 !important;
+}
+
+/* Assign Button - Keep Light Mode Colors */
+body[data-theme="dark"] #createAssignmentBtn {
+    background-color: #667eea !important;
+    background: #667eea !important;
+    color: white !important;
+}
+
+body[data-theme="dark"] #createAssignmentBtn:hover {
+    background-color: #5568d3 !important;
+    background: #5568d3 !important;
+}
+
+/* ========== DASHBOARD USER MANAGEMENT SECTION ========== */
+
+/* Delete button - Make it RED */
+body[data-theme="dark"] .btn-delete {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border-color: #b91c1c !important;
+}
+
+body[data-theme="dark"] .btn-delete:hover {
+    background-color: #991b1b !important;
+    color: #ffffff !important;
+}
+
+/* Assignment Box Styling */
+body[data-theme="dark"] .assignment-box,
+body[data-theme="dark"] .assignment-item {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+body[data-theme="dark"] .assignment-box h4,
+body[data-theme="dark"] .assignment-item h4 {
+    color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .assignment-box p,
+body[data-theme="dark"] .assignment-item p {
+    color: #cbd5e1 !important;
+}
+
+/* Create New Assignment Section */
+body[data-theme="dark"] [id*="createAssignment"],
+body[data-theme="dark"] [class*="create-assignment"] {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+
+/* Current Assignments Section */
+body[data-theme="dark"] [id*="currentAssignments"],
+body[data-theme="dark"] [class*="current-assignments"] {
+    background-color: #1e293b !important;
+}
+
+/* Generic button styling for management page */
+body[data-theme="dark"] button {
+    color: inherit;
+}
+
+body[data-theme="dark"] button[type="submit"],
+body[data-theme="dark"] .btn-submit {
+    background-color: #38bdf8 !important;
+    color: #0f172a !important;
+    border-color: #38bdf8 !important;
+}
+
+body[data-theme="dark"] button[type="submit"]:hover,
+body[data-theme="dark"] .btn-submit:hover {
+    background-color: #0284c7 !important;
+    border-color: #0284c7 !important;
+}
+
+/* ========== FIX WHITE BOXES IN DARK MODE ========== */
+
+/* Override light background containers */
+body[data-theme="dark"] div[style*="background: #f8f9fa"],
+body[data-theme="dark"] div[style*="background:#f8f9fa"],
+body[data-theme="dark"] div[style*="background: #f5f7fa"],
+body[data-theme="dark"] div[style*="background:#f5f7fa"],
+body[data-theme="dark"] div[style*="background: #fff"],
+body[data-theme="dark"] div[style*="background:#fff"],
+body[data-theme="dark"] div[style*="background: white"],
+body[data-theme="dark"] div[style*="background:white"] {
+    background-color: #1e293b !important;
+    background: #1e293b !important;
+}
+
+/* Assignment form container - remove white box appearance */
+body[data-theme="dark"] .card > div[style*="background: #f8f9fa"],
+body[data-theme="dark"] .card > div[style*="padding: 20px"],
+body[data-theme="dark"] [class*="assignment"] > div[style*="background"] {
+    background-color: #1e293b !important;
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+
+/* Remove or darken white form backgrounds */
+body[data-theme="dark"] [style*="background: #f8f9fa"] {
+    background-color: #1e293b !important;
+    background: #1e293b !important;
+}
+
+body[data-theme="dark"] [style*="color: #6c757d"] {
+    color: #cbd5e1 !important;
+}
+
+/* Catch all light-colored borders on user management section and convert to dark */
+body[data-theme="dark"] #userManagementCard,
+body[data-theme="dark"] #userManagementCard * {
+    border-color: transparent !important;
+}
+
+/* Explicitly remove all borders from children of userManagementCard */
+body[data-theme="dark"] #userManagementCard .card-header,
+body[data-theme="dark"] #userManagementCard .user-mgmt-section,
+body[data-theme="dark"] #userManagementCard .recent-users-list,
+body[data-theme="dark"] #userManagementCard .user-item,
+body[data-theme="dark"] #userManagementCard .staff-breakdown,
+body[data-theme="dark"] #userManagementCard .role-stat {
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}

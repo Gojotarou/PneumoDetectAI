@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>New Analysis - Upload X-Ray</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <style>
+        /* small page-specific helpers */
+        .two-col { display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start }
+        .upload-box { min-height: 360px; display:flex; flex-direction:column; }
+        .upload-zone { flex:1; border:2px dashed #e0e6ea; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; flex-direction:column; padding:28px }
+        .upload-zone p { color:#99a0a6; margin-top:12px }
+        .meta-row { color:#6c757d; margin:12px 0 20px; font-size:14px }
+        .analyze-row { margin-top:24px; display:flex; flex-direction:column; gap:14px; align-items:stretch; }
+        .button-group { display:grid; grid-template-columns: 1fr 2fr; gap:14px; align-items:center; }
+        .btn-secondary { padding:13px 21px; border-radius:8px; border:1.5px solid #d0d7e0; background:transparent; color:#2c3e50; font-weight:600; font-size:14px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; transition: all 0.25s ease; }
+        .btn-secondary:hover { background:#f8f9fa; color:#2c3e50; border-color:#b0b8c0; }
+        .analyze-cta { width:100%; display:flex; align-items:center; justify-content:center; padding:14px 24px; border-radius:8px; background:linear-gradient(135deg, #667eea 0%, #5568d3 100%); color:#fff !important; font-weight:600; font-size:14px; text-decoration:none; border:none; cursor:pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2); }
+        .analyze-cta:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); filter: brightness(0.95); }
+        .analyze-cta:disabled { opacity: 0.6; cursor: not-allowed; }
+        body[data-theme="dark"] .btn-secondary { border-color:#444652; color:#e0e5f0 !important; }
+        body[data-theme="dark"] .btn-secondary:hover { background:#2a2e3e; color:#fff !important; border-color:#555; }
+        body[data-theme="dark"] .analyze-cta { background:linear-gradient(135deg, #667eea 0%, #5568d3 100%); color:#fff !important; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25); }
+        body[data-theme="dark"] .analyze-cta:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+        .small-hint { font-size:13px; color:#95a5a6 }
+        .confusion-toggle { display:flex; gap:8px }
+        .confusion-toggle button { flex:1; padding:8px 10px; border-radius:8px; border:1px solid #e6e9ec; background:#fff }
+        .loading { display:none; text-align:center; padding:20px; color:#007bff; font-weight:600 }
+    </style>
+</head>
+<body data-theme="light" class="mobile-nav-enabled">
+    <div class="app-container">
+        <aside class="sidebar" id="sidebarNav">
+            <div class="logo">
+                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon icon-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-medium-icon lucide-sun-medium icon-sun" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 3v1"/><path d="M12 20v1"/><path d="M3 12h1"/><path d="M20 12h1"/><path d="m18.364 5.636-.707.707"/><path d="m6.343 17.657-.707.707"/><path d="m5.636 5.636.707.707"/><path d="m17.657 17.657.707.707"/></svg>
+                </button>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Dashboard</a>
+                <a href="{{ url_for('new_analysis') }}" {% if request.endpoint == 'new_analysis' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg></span>New Analysis</a>
+                <a href="{{ url_for('report') }}" {% if request.endpoint == 'report' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>Patient History</a>
+                <a href="{{ url_for('analytics') }}" {% if request.endpoint == 'analytics' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="3" y2="20"/><line x1="21" y1="20" x2="3" y2="20"/><line x1="7" y1="15" x2="7" y2="20"/><line x1="12" y1="10" x2="12" y2="20"/><line x1="17" y1="5" x2="17" y2="20"/></svg></span>Analytics</a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('staff_performance') }}" {% if request.endpoint == 'staff_performance' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Staff Performance</a>
+                {% endif %}
+                {% if current_user.role != 'admin' %}
+                <a href="{{ url_for('alerts') }}" {% if request.endpoint == 'alerts' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>Alerts</a>
+                {% endif %}
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatarInitials">--</div>
+                <div class="user-details">
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userEmail">...</p>
+                    <span id="userRole" class="user-role">--</span>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </aside>
+
+        <button class="mobile-nav-overlay" id="mobileNavOverlay" aria-label="Close menu"></button>
+
+        <main class="main-content">
+            <div class="mobile-nav-bar">
+                <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebarNav">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="mobile-nav-title">PneumoDetect</div>
+            </div>
+
+            <div class="top-header">
+                <h1>New Analysis</h1>
+                <p>Upload and analyze chest X-ray images for pneumonia detection</p>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="stepper" aria-hidden="false">
+                    <div class="step">
+                        <div class="circle">1</div>
+                        <div class="label">Patient Info</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step active">
+                        <div class="circle">2</div>
+                        <div class="label">Upload X-Ray</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step">
+                        <div class="circle">3</div>
+                        <div class="label">Results</div>
+                    </div>
+                </div>
+
+                <div class="meta-row" id="patientMetaRow">
+                    <strong>Patient:</strong> <span id="displayName">–</span> &nbsp; • &nbsp; <strong>Age:</strong> <span id="displayAge">–</span> &nbsp; • &nbsp; <strong>ID:</strong> <span id="displayId">–</span>
+                </div>
+
+                <div class="two-col">
+                    <div class="upload-box card">
+                        <h3 style="margin:0 0 12px">Image Upload</h3>
+                        <p class="small-hint" style="margin-bottom:12px">Upload chest X-ray image (JPEG/PNG format)</p>
+                        <div class="upload-zone" id="dropZone">
+                            <img id="previewImg" alt="preview" style="max-width:100%; opacity:0; transition:opacity .18s; border-radius:8px; margin-bottom:12px; display:block">
+                            <p id="uploadText">Drag & Drop X-Ray here</p>
+                            <p class="small-hint">OR</p>
+                            <label class="btn btn-outline" style="cursor:pointer; margin-top:12px">
+                                <input type="file" id="fileInput" accept="image/*" style="display:none">
+                                Browse Files
+                            </label>
+                            <button type="button" id="deleteImageBtn" style="margin-top:12px; padding:8px 16px; background:#dc3545; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:none; font-size:13px; align-items:center; gap:6px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete Image</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="margin:0 0 12px">Clinical Input (CURB-65)</h3>
+                        <p class="small-hint" style="margin-bottom:14px">Answer each clinical criterion below</p>
+
+                        <div class="card-body">
+                            <div class="form-row">
+                                <label>Patient aged ≥65 years?</label>
+                                <div class="confusion-toggle">
+                                    <button type="button" id="ageNo" data-value="0">No</button>
+                                    <button type="button" id="ageYes" data-value="1">Yes</button>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label>New onset confusion?</label>
+                                <div class="confusion-toggle">
+                                    <button type="button" id="confNo" data-value="0">No</button>
+                                    <button type="button" id="confYes" data-value="1">Yes</button>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label>Urea >7 mmol/L (BUN >19 mg/dL)?</label>
+                                <div class="confusion-toggle">
+                                    <button type="button" id="ureaNo" data-value="0">No</button>
+                                    <button type="button" id="ureaYes" data-value="1">Yes</button>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label>Respiratory rate ≥30 breaths/min?</label>
+                                <div class="confusion-toggle">
+                                    <button type="button" id="respNo" data-value="0">No</button>
+                                    <button type="button" id="respYes" data-value="1">Yes</button>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label>SBP &lt;90 mmHg or DBP ≤60 mmHg?</label>
+                                <div class="confusion-toggle">
+                                    <button type="button" id="bpNo" data-value="0">No</button>
+                                    <button type="button" id="bpYes" data-value="1">Yes</button>
+                                </div>
+                            </div>
+
+                            <div id="curbResult" class="form-row" style="margin-top:6px;">
+                                <label>CURB-65 Score</label>
+                                <div id="curbScore" style="padding:10px 12px; border-radius:8px; background:#f8f9fa; color:#2c3e50; font-weight:600">Score: – &nbsp; • &nbsp; Risk: –</div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card analyze-row" style="margin-top:22px; padding:18px 22px;">
+                    <div class="button-group">
+                        <a class="btn-secondary" href="{{ url_for('new_analysis') }}">← Back to Patient Info</a>
+                        <button id="analyzeBtn" class="analyze-cta">Analyze Patient</button>
+                    </div>
+                    <div class="loading" id="loadingMsg">Analyzing... Please wait</div>
+                </div>
+            </div>
+
+            <footer class="app-footer" aria-label="Application Footer">
+                <div class="app-footer-main">
+                    <div class="app-footer-col">
+                        <div class="app-footer-title">Contact Us</div>
+                        <div class="app-footer-support">
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.61a2 2 0 0 1-.45 2.11L8.03 9.91a16 16 0 0 0 6.06 6.06l1.47-1.25a2 2 0 0 1 2.11-.45c.84.29 1.71.5 2.61.62A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>+60 17-4151690</span>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+                                <a href="mailto:johannesric03@gmail.com">johannesric03@gmail.com</a>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row app-footer-address">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <address>University of Malaysia Sarawak, Jln Datuk Mohammad Musa, 94300 Kota Samarahan, Sarawak, Malaysia</address>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-footer-bottom">
+                    <div class="app-footer-copy">
+                    For clinical support purposes only. Final diagnosis and treatment decisions remain the responsibility of licensed medical professionals.
+                    </div>
+                    <div class="app-footer-meta">
+                        <div>Version 1.0.0 | Last updated: <span class="last-updated-date"></span></div>
+                        <div>&copy; 2026 Johannes Eric Ramesh. All Rights Reserved.</div>
+                    </div>
+                </div>
+            </footer>
+
+            <script>
+                (function() {
+                    const lastUpdated = document.querySelector('.last-updated-date');
+                    if (lastUpdated) {
+                        lastUpdated.textContent = new Date().toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    }
+                })();
+            </script>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/mobile-nav.js') }}"></script>
+    <script>
+        window.initMobileNav?.({
+            breakpoint: 900,
+            bodyClass: 'mobile-nav-enabled',
+            openClass: 'nav-open',
+            toggleSelector: '#mobileNavToggle',
+            overlaySelector: '#mobileNavOverlay',
+            sidebarSelector: '#sidebarNav',
+            navLinksSelector: '#sidebarNav .nav-links a'
+        });
+
+        // small helper: wire file input label and upload state
+        (function(){
+            const fileInput = document.getElementById('fileInput');
+            const dropZone = document.getElementById('dropZone');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const deleteImageBtn = document.getElementById('deleteImageBtn');
+            const uploadText = document.getElementById('uploadText');
+            let hasFile = false;
+
+            function enableAnalyze(enabled){
+                hasFile = !!enabled;
+            }
+
+            function displayImage(file) {
+                const name = file.name;
+                uploadText.textContent = name;
+                // preview
+                const img = dropZone.querySelector('img');
+                try{
+                    const url = URL.createObjectURL(file);
+                    img.src = url;
+                    img.onload = ()=> URL.revokeObjectURL(url);
+                    img.style.opacity = 1;
+                }catch(err){/* ignore */}
+                deleteImageBtn.style.display = 'flex';
+                enableAnalyze(true);
+            }
+
+            function clearImage() {
+                fileInput.value = '';
+                uploadText.textContent = 'Drag & Drop X-Ray here';
+                const img = dropZone.querySelector('img');
+                img.src = '';
+                img.style.opacity = 0;
+                deleteImageBtn.style.display = 'none';
+                enableAnalyze(false);
+            }
+
+            fileInput?.addEventListener('change', function(e){
+                if(!this.files || !this.files[0]) return enableAnalyze(false);
+                displayImage(this.files[0]);
+            });
+
+            // Delete button handler
+            deleteImageBtn?.addEventListener('click', function(e){
+                e.preventDefault();
+                clearImage();
+            });
+
+            // drag & drop handlers
+            dropZone?.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.style.borderColor='#a6b6c3'; });
+            dropZone?.addEventListener('dragleave', function(e){ dropZone.style.borderColor='#e0e6ea'; });
+            dropZone?.addEventListener('drop', function(e){
+                e.preventDefault(); dropZone.style.borderColor='#e0e6ea';
+                const dt = e.dataTransfer;
+                if(!dt || !dt.files || !dt.files[0]) return;
+                const f = dt.files[0];
+                displayImage(f);
+                // populate file input (best-effort)
+                try{ fileInput.files = dt.files; } catch(err){} 
+            });
+
+            // Analyze button calls Flask API
+            analyzeBtn?.addEventListener('click', async function(e){
+                e.preventDefault();
+                
+                // Validate inputs
+                const missing = [];
+                if(!hasFile) missing.push('Upload an X-ray image');
+
+                // Validation: Check that all CURB-65 criteria are answered
+                if(typeof window.curb65State === 'undefined' || 
+                   window.curb65State.age === null || 
+                   window.curb65State.confusion === null || 
+                   window.curb65State.urea === null || 
+                   window.curb65State.respiratory === null || 
+                   window.curb65State.bp === null) {
+                    missing.push('Complete all CURB-65 criteria (answer yes/no for each criterion)');
+                }
+
+                if(missing.length){
+                    alert('Please complete the following before analyzing:\n\n• ' + missing.join('\n• '));
+                    return;
+                }
+
+                // Show loading
+                document.getElementById('loadingMsg').style.display = 'block';
+                analyzeBtn.disabled = true;
+
+                // Prepare form data for API call
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+                formData.append('age', sessionStorage.getItem('patient_age') || '');  // Actual patient age, not CURB-65 criterion
+                formData.append('confusion', window.curb65State.confusion);
+                formData.append('urea', window.curb65State.urea);
+                formData.append('respiratory', window.curb65State.respiratory);
+                formData.append('sbp', window.curb65State.bp);  // For blood pressure criterion
+                formData.append('age_criterion', window.curb65State.age);  // CURB-65 age criterion (0/1)
+                formData.append('dbp', 0);  // Not needed with YES/NO button
+                formData.append('patient_name', sessionStorage.getItem('patient_name') || '');
+                formData.append('medical_id', sessionStorage.getItem('patient_medical_id') || '');
+
+                try {
+                    // Call Flask API
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    let result = {};
+                    const responseType = response.headers.get('content-type') || '';
+                    if (responseType.includes('application/json')) {
+                        result = await response.json();
+                    } else {
+                        const textBody = await response.text();
+                        result = {
+                            error: textBody ? textBody.slice(0, 500) : 'Server returned a non-JSON response.'
+                        };
+                    }
+
+                    if(response.ok && result.success){
+                        // Store result in sessionStorage for results page
+                        sessionStorage.setItem('analysis_result', JSON.stringify(result));
+                        // Navigate to results (Step 3)
+                        window.location.href = '{{ url_for("results") }}';
+                    } else {
+                        // Enhanced error handling for duplicate medical IDs
+                        let errorMsg = result.error || 'Unknown error';
+
+                        // Friendly message for X-ray validator rejection
+                        if (result.xray_validation && result.xray_validation.is_xray === false) {
+                            const conf = result.xray_validation.confidence;
+                            const threshold = result.xray_validation.threshold;
+                            const confText = (typeof conf === 'number') ? `${conf.toFixed(2)}%` : 'N/A';
+                            const thresholdText = (typeof threshold === 'number') ? `${threshold.toFixed(2)}%` : 'N/A';
+
+                            errorMsg = [
+                                'This image was rejected because it is likely not a chest X-ray.',
+                                '',
+                                `X-ray confidence: ${confText}`,
+                                `Required threshold: ${thresholdText}`,
+                                '',
+                                'Please upload a clear chest X-ray image and try again.'
+                            ].join('\n');
+                        }
+                        
+                        if(response.status === 409 && result.existing_patient) {
+                            // Duplicate patient ID detected
+                            const existing = result.existing_patient;
+                            errorMsg = `${errorMsg}\n\nExisting Patient Information:\n• Name: ${existing.name}\n• Age: ${existing.age}\n\n⚠️ Please use a different Medical ID to create a new patient record.`;
+                        } else if(result.details) {
+                            errorMsg += `\n\n${result.details}`;
+                        }
+                        
+                        alert(errorMsg);
+                        document.getElementById('loadingMsg').style.display = 'none';
+                        analyzeBtn.disabled = false;
+                    }
+                } catch(err){
+                    alert('Unable to reach the analysis service. Please check your network/server and try again.\n\nDetails: ' + err.message);
+                    document.getElementById('loadingMsg').style.display = 'none';
+                    analyzeBtn.disabled = false;
+                }
+            });
+
+            // initialize state
+            enableAnalyze(false);
+        })();
+
+        // Load patient info from sessionStorage on page load
+        (function(){
+            const name = sessionStorage.getItem('patient_name');
+            const age = sessionStorage.getItem('patient_age');
+            const medicalId = sessionStorage.getItem('patient_medical_id');
+
+            if(name) document.getElementById('displayName').textContent = name;
+            if(age) document.getElementById('displayAge').textContent = age;
+            if(medicalId) document.getElementById('displayId').textContent = medicalId;
+        })();
+
+        // CURB-65 calculator with YES/NO buttons
+        (function(){
+            // Initialize global state
+            window.curb65State = {
+                age: null,
+                confusion: null,
+                urea: null,
+                respiratory: null,
+                bp: null
+            };
+
+            const buttons = {
+                age: { yes: document.getElementById('ageYes'), no: document.getElementById('ageNo') },
+                confusion: { yes: document.getElementById('confYes'), no: document.getElementById('confNo') },
+                urea: { yes: document.getElementById('ureaYes'), no: document.getElementById('ureaNo') },
+                respiratory: { yes: document.getElementById('respYes'), no: document.getElementById('respNo') },
+                bp: { yes: document.getElementById('bpYes'), no: document.getElementById('bpNo') }
+            };
+
+            const scoreEl = document.getElementById('curbScore');
+
+            function updateButtonState(criterion, value) {
+                window.curb65State[criterion] = value;
+                refreshButtonColors(criterion, value);
+                computeCURB();
+            }
+            
+            // Separate function to just refresh colors without triggering CURB recalculation
+            function refreshButtonColors(criterion, value) {
+                const btn = buttons[criterion];
+                
+                // Get current theme to use correct colors
+                const currentTheme = document.body.getAttribute('data-theme') || 'light';
+                const activeColor = currentTheme === 'dark' ? '#38bdf8' : '#007bff';
+                const activeText = '#fff';
+                const inactiveColor = currentTheme === 'dark' ? '#334155' : '#fff';
+                const inactiveText = currentTheme === 'dark' ? '#cbd5e1' : '#000';
+                
+                if (value === 1) {
+                    btn.yes.style.setProperty('background-color', activeColor, 'important');
+                    btn.yes.style.setProperty('color', activeText, 'important');
+                    btn.no.style.setProperty('background-color', inactiveColor, 'important');
+                    btn.no.style.setProperty('color', inactiveText, 'important');
+                } else if (value === 0) {
+                    btn.no.style.setProperty('background-color', activeColor, 'important');
+                    btn.no.style.setProperty('color', activeText, 'important');
+                    btn.yes.style.setProperty('background-color', inactiveColor, 'important');
+                    btn.yes.style.setProperty('color', inactiveText, 'important');
+                }
+            }
+            
+            // Expose functions globally so theme toggle can call them
+            window.updateCURBButtonColors = refreshButtonColors;
+
+            function computeCURB() {
+                // Score increases by 1 for each YES answer
+                let score = 0;
+                if (window.curb65State.age === 1) score += 1;
+                if (window.curb65State.confusion === 1) score += 1;
+                if (window.curb65State.urea === 1) score += 1;
+                if (window.curb65State.respiratory === 1) score += 1;
+                if (window.curb65State.bp === 1) score += 1;
+
+                let risk = '–';
+                const currentTheme = document.body.getAttribute('data-theme') || 'light';
+                let color = currentTheme === 'dark' ? '#1e293b' : '#f8f9fa';
+                
+                if (score <= 1) {
+                    risk = 'Low';
+                    color = currentTheme === 'dark' ? '#064e3b' : '#e9f7ef';  // Dark: dark green, Light: light green
+                }
+                else if (score === 2) {
+                    risk = 'Moderate';
+                    color = currentTheme === 'dark' ? '#713f12' : '#fff7e6';  // Dark: dark amber, Light: light amber
+                }
+                else if (score === 3) {
+                    risk = 'High';
+                    color = currentTheme === 'dark' ? '#7c2d12' : '#ffe6e6';  // Dark: dark orange, Light: light red
+                }
+                else {  // 4-5
+                    risk = 'Very High';
+                    color = currentTheme === 'dark' ? '#7f1d1d' : '#ffcccc';  // Dark: dark red, Light: light red
+                }
+
+                scoreEl.textContent = `Score: ${score}  •  Risk: ${risk}`;
+                scoreEl.style.setProperty('background-color', color, 'important');
+            }
+
+            // Attach click handlers to all buttons
+            buttons.age.yes.addEventListener('click', () => updateButtonState('age', 1));
+            buttons.age.no.addEventListener('click', () => updateButtonState('age', 0));
+            buttons.confusion.yes.addEventListener('click', () => updateButtonState('confusion', 1));
+            buttons.confusion.no.addEventListener('click', () => updateButtonState('confusion', 0));
+            buttons.urea.yes.addEventListener('click', () => updateButtonState('urea', 1));
+            buttons.urea.no.addEventListener('click', () => updateButtonState('urea', 0));
+            buttons.respiratory.yes.addEventListener('click', () => updateButtonState('respiratory', 1));
+            buttons.respiratory.no.addEventListener('click', () => updateButtonState('respiratory', 0));
+            buttons.bp.yes.addEventListener('click', () => updateButtonState('bp', 1));
+            buttons.bp.no.addEventListener('click', () => updateButtonState('bp', 0));
+        })();
+
+        // Load current user information
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    const user = result.user;
+                    
+                    // Update user avatar (initials)
+                    const names = user.name.split(' ');
+                    const initials = names.map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('userAvatarInitials').textContent = initials;
+                    
+                    // Update user details
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('userEmail').textContent = user.email;
+                    const userRoleElement = document.getElementById('userRole'); userRoleElement.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1); userRoleElement.className = `user-role role-${user.role}`;
+                    
+
+                } else {
+                    // Not logged in, redirect to login
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        // Clear all patient data from sessionStorage for security/privacy
+                        sessionStorage.removeItem('patient_name');
+                        sessionStorage.removeItem('patient_age');
+                        sessionStorage.removeItem('patient_medical_id');
+                        sessionStorage.removeItem('analysis_result');
+                        sessionStorage.removeItem('currentAnalysisId');
+                        
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error logging out. Please try again.');
+                }
+            }
+        });
+
+        // Load user info on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+        });
+
+        // ========== THEME TOGGLE ==========
+        (function() {
+            const html = document.documentElement;
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+            
+            // Load saved theme or default to light
+            function loadTheme() {
+                const saved = localStorage.getItem('theme_preference') || 'light';
+                applyTheme(saved);
+            }
+            
+            function applyTheme(theme) {
+                body.setAttribute('data-theme', theme);
+                localStorage.setItem('theme_preference', theme);
+                updateToggleButton(theme);
+                // Refresh CURB-65 button colors when theme changes
+                if (typeof window.updateCURBButtonColors !== 'undefined' && typeof window.curb65State !== 'undefined') {
+                    for (const criterion in window.curb65State) {
+                        if (window.curb65State.hasOwnProperty(criterion) && window.curb65State[criterion] !== null) {
+                            window.updateCURBButtonColors(criterion, window.curb65State[criterion]);
+                        }
+                    }
+                }
+            }
+            
+            function updateToggleButton(theme) {
+                if (themeToggle) {
+                    const moonIcon = themeToggle.querySelector('.icon-moon');
+                    const sunIcon = themeToggle.querySelector('.icon-sun');
+                    if (theme === 'dark') {
+                        if (moonIcon) moonIcon.style.display = 'none';
+                        if (sunIcon) sunIcon.style.display = 'block';
+                        themeToggle.classList.add('dark-mode');
+                        themeToggle.classList.remove('light-mode');
+                    } else {
+                        if (moonIcon) moonIcon.style.display = 'block';
+                        if (sunIcon) sunIcon.style.display = 'none';
+                        themeToggle.classList.add('light-mode');
+                        themeToggle.classList.remove('dark-mode');
+                    }
+                }
+            }
+            
+            // Toggle theme on button click
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const current = body.getAttribute('data-theme') || 'light';
+                    const newTheme = current === 'light' ? 'dark' : 'light';
+                    applyTheme(newTheme);
+                });
+            }
+            
+            // Load theme on page load
+            loadTheme();
+        })();
+    </script>
+</body>
+</html>

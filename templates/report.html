@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient History - PneumoDetect AI</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/patient-history.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <style>
+        /* ========== BULK ACTIONS & PAGINATION ========== */
+        .bulk-actions-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f0f4ff;
+            border: 1px solid #e0e5f0;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #667eea;
+        }
+
+        .bulk-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .bulk-info input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-bulk-action {
+            padding: 8px 14px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-bulk-action:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-bulk-action.btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        .btn-bulk-action.btn-secondary:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        /* Hide checkbox column by default */
+        #records-data th:first-child,
+        #records-data td:first-child {
+            display: none;
+        }
+
+        /* Show checkbox column when in selection mode */
+        #records-data.show-checkboxes th:first-child,
+        #records-data.show-checkboxes td:first-child {
+            display: table-cell;
+        }
+
+        .btn-select-multiple {
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 16px 0;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-select-multiple:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .pagination-info {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .pagination-info select {
+            padding: 6px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+            color: #2c3e50;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-btn {
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-numbers {
+            display: flex;
+            gap: 4px;
+            margin: 0 8px;
+        }
+
+        .page-number {
+            padding: 6px 10px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            color: #667eea;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .page-number:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .page-number.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Table row checkboxes */
+        table tbody tr:has(input[type="checkbox"]:checked) {
+            background-color: #f0f4ff;
+        }
+
+        table tbody input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        /* Dark mode for bulk actions & pagination */
+        body[data-theme="dark"] .bulk-actions-toolbar {
+            background: #35394a;
+            border-color: #444;
+            border-left-color: #667eea;
+        }
+
+        body[data-theme="dark"] .bulk-info {
+            color: #e0e5f0;
+        }
+
+        body[data-theme="dark"] .pagination-controls {
+            background: #2a2e3e;
+            border-color: #444;
+        }
+
+        body[data-theme="dark"] .pagination-info {
+            color: #9db4d4;
+        }
+
+        body[data-theme="dark"] .pagination-info select {
+            background: #3a3e50;
+            color: #e0e5f0;
+            border-color: #444;
+        }
+
+        body[data-theme="dark"] .pagination-btn,
+        body[data-theme="dark"] .page-number {
+            background: #3a3e50;
+            border-color: #444;
+            color: #9db4d4;
+        }
+
+        body[data-theme="dark"] .pagination-btn:hover:not(:disabled),
+        body[data-theme="dark"] .page-number:hover {
+            background: #444;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        body[data-theme="dark"] .page-number.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        body[data-theme="dark"] table tbody tr:has(input[type="checkbox"]:checked) {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        body[data-theme="dark"] .btn-select-multiple {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+        }
+
+        body[data-theme="dark"] .btn-select-multiple:hover {
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .records-table th,
+            .records-table td {
+                padding: 12px 10px;
+                font-size: 12px;
+            }
+            
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .records-table th,
+            .records-table td {
+                padding: 10px 8px;
+                font-size: 11px;
+            }
+
+            .action-buttons {
+                gap: 4px;
+            }
+
+            .action-btn span {
+                display: none;
+            }
+
+            .action-btn {
+                padding: 6px 8px;
+            }
+
+            .pagination-controls {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .pagination-info {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .pagination-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .records-table th,
+            .records-table td {
+                padding: 8px 6px;
+                font-size: 10px;
+            }
+
+            .table-wrapper {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .action-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+        }
+    </style>
+</head>
+<body data-theme="light" class="mobile-nav-enabled">
+    <div class="app-container">
+        <aside class="sidebar" id="sidebarNav">
+            <div class="logo">
+                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon icon-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-medium-icon lucide-sun-medium icon-sun" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 3v1"/><path d="M12 20v1"/><path d="M3 12h1"/><path d="M20 12h1"/><path d="m18.364 5.636-.707.707"/><path d="m6.343 17.657-.707.707"/><path d="m5.636 5.636.707.707"/><path d="m17.657 17.657.707.707"/></svg>
+                </button>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Dashboard</a>
+                {% if current_user.role in ['doctor', 'nurse'] %}
+                    <a href="{{ url_for('new_analysis') }}" {% if request.endpoint == 'new_analysis' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg></span>New Analysis</a>
+                {% endif %}
+                <a href="{{ url_for('report') }}" {% if request.endpoint == 'report' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>Patient History</a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('management') }}" {% if request.endpoint == 'management' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m14.305 16.53.923-.382"/><path d="m15.228 13.852-.923-.383"/><path d="m16.852 12.228-.383-.923"/><path d="m16.852 17.772-.383.924"/><path d="m19.148 12.228.383-.923"/><path d="m19.53 18.696-.382-.924"/><path d="m20.772 13.852.924-.383"/><path d="m20.772 16.148.924.383"/><circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/></svg></span>Management</a>
+                {% endif %}
+                <a href="{{ url_for('analytics') }}" {% if request.endpoint == 'analytics' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="3" y2="20"/><line x1="21" y1="20" x2="3" y2="20"/><line x1="7" y1="15" x2="7" y2="20"/><line x1="12" y1="10" x2="12" y2="20"/><line x1="17" y1="5" x2="17" y2="20"/></svg></span>Analytics</a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('staff_performance') }}" {% if request.endpoint == 'staff_performance' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Staff Performance</a>
+                {% endif %}
+                {% if current_user.role != 'admin' %}
+                <a href="{{ url_for('alerts') }}" {% if request.endpoint == 'alerts' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>Alerts</a>
+                {% endif %}
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatarInitials">--</div>
+                <div class="user-details">
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userEmail">...</p>
+                    <span id="userRole" class="user-role">--</span>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </aside>
+
+        <button class="mobile-nav-overlay" id="mobileNavOverlay" aria-label="Close menu"></button>
+
+        <main class="main-content">
+            <div class="mobile-nav-bar">
+                <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebarNav">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="mobile-nav-title">PneumoDetect</div>
+            </div>
+
+            <div class="top-header">
+                <h1>Patient History</h1>
+                <p>Review past diagnoses and track patient progress over time</p>
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Metrics Cards -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h3>Total Records</h3>
+                            <div class="metric-value" id="total-records">0</div>
+                        </div>
+                        <div class="metric-icon blue"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h3>Pneumonia Cases</h3>
+                            <div class="metric-value" id="pneumonia-count">0</div>
+                        </div>
+                        <div class="metric-icon red"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h3>Normal Cases</h3>
+                            <div class="metric-value" id="normal-count">0</div>
+                        </div>
+                        <div class="metric-icon green"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                    </div>
+                </div>
+
+                <!-- Records Table -->
+                <div class="records-table">
+                    <!-- Filter Panel -->
+                    <div class="filter-panel">
+                        <div class="filter-header" onclick="toggleFilterPanel()">
+                            <h3>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 8px; vertical-align: middle;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                                Advanced Filters
+                            </h3>
+                            <button class="filter-toggle-btn collapsed" id="filterToggleBtn" title="Toggle filters">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
+                        </div>
+                        <div class="filter-content collapsed" id="filterContent">
+                            <div class="filter-grid">
+                                <!-- Patient ID/Name Search -->
+                                <div class="filter-group">
+                                    <label for="searchInput">Patient ID / Name</label>
+                                    <input type="text" id="searchInput" placeholder="Search by patient ID or name..." onkeyup="applyFilters()">
+                                </div>
+
+                                <!-- Diagnosis Filter -->
+                                <div class="filter-group">
+                                    <label for="diagnosisFilter">Diagnosis</label>
+                                    <select id="diagnosisFilter" onchange="applyFilters()">
+                                        <option value="">All Diagnoses</option>
+                                        <option value="pneumonia">Pneumonia</option>
+                                        <option value="normal">Normal</option>
+                                    </select>
+                                </div>
+
+                                <!-- Confidence Range -->
+                                <div class="filter-group">
+                                    <label for="confidenceRange">Confidence: <span id="confidenceValue">0</span>% - 100%</label>
+                                    <input type="range" id="confidenceRange" min="0" max="100" value="0" onchange="applyFilters()" oninput="document.getElementById('confidenceValue').textContent = this.value">
+                                </div>
+
+                                <!-- Severity Filter -->
+                                <div class="filter-group">
+                                    <label>Severity Levels</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" value="0" onchange="applyFilters()"> Low (0)</label>
+                                        <label><input type="checkbox" value="1" onchange="applyFilters()"> Low (1)</label>
+                                        <label><input type="checkbox" value="2" onchange="applyFilters()"> Medium (2)</label>
+                                        <label><input type="checkbox" value="3" onchange="applyFilters()"> High (3)</label>
+                                        <label><input type="checkbox" value="4" onchange="applyFilters()"> Critical (4)</label>
+                                    </div>
+                                </div>
+
+                                <!-- Status Filter -->
+                                <div class="filter-group">
+                                    <label>Review Status</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" value="pending" class="status-filter" onchange="applyFilters()"> Pending Review</label>
+                                        <label><input type="checkbox" value="reviewed" class="status-filter" onchange="applyFilters()"> Reviewed</label>
+                                    </div>
+                                </div>
+
+                                <!-- Date Range -->
+                                <div class="filter-group">
+                                    <label for="dateFrom">Date From</label>
+                                    <input type="date" id="dateFrom" onchange="applyFilters()">
+                                </div>
+
+                                <div class="filter-group">
+                                    <label for="dateTo">Date To</label>
+                                    <input type="date" id="dateTo" onchange="applyFilters()">
+                                </div>
+                            </div>
+
+                            <div class="filter-actions">
+                                <button class="btn-reset-filters" onclick="resetFilters()">↻ Reset All Filters</button>
+                                <button class="btn-export-csv" onclick="exportToCSV()" title="Export filtered records as CSV">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 6px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    Export CSV
+                                </button>
+                                <span class="filter-count" id="filterCount"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pagination and Bulk Actions Controls -->
+                    <div id="bulk-actions-toolbar" class="bulk-actions-toolbar" style="display: none;">
+                        <div class="bulk-info">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" title="Select all">
+                            <span id="selectedCount">0 selected</span>
+                        </div>
+                        <div class="bulk-actions">
+                            <button class="btn-bulk-action" onclick="deleteSelectedRecords()" title="Delete selected">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                Delete Selected
+                            </button>
+                            <button class="btn-bulk-action btn-secondary" onclick="cancelBulkAction()">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="pagination-controls">
+                        <div class="pagination-info">
+                            <span id="pageInfo">Showing 0 records</span>
+                            <select id="pageSize" onchange="changePageSize()" style="margin-left: 16px;">
+                                <option value="10" selected>10 per page</option>
+                                <option value="25">25 per page</option>
+                                <option value="50">50 per page</option>
+                            </select>
+                        </div>
+                        <div class="pagination-buttons">
+                            <button class="pagination-btn" id="prevBtn" onclick="previousPage()">← Previous</button>
+                            <span id="pageNumbers" class="page-numbers"></span>
+                            <button class="pagination-btn" id="nextBtn" onclick="nextPage()">Next →</button>
+                        </div>
+                    </div>
+
+                    <!-- Select Multiple Button -->
+                    <button id="selectMultipleBtn" class="btn-select-multiple" onclick="toggleSelectionMode()">Select Multiple</button>
+
+                    <!-- Records Table -->
+                    <div class="table-wrapper">
+                        <table id="records-data">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="tableSelectAllCheckbox" onchange="toggleTableSelectAll()"></th>
+                                    <th>Date</th>
+                                    <th>Patient Name</th>
+                                    <th>Patient ID</th>
+                                    <th>Diagnosis</th>
+                                    <th>Confidence</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <tr>
+                                    <td colspan="10" style="text-align: center; padding: 40px; color: #95a5a6;">Loading patient records...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Back to Dashboard -->
+                <div class="back-button">
+                    <a href="{{ url_for('dashboard') }}" class="back-btn">Back to Dashboard</a>
+                </div>
+            </div>
+
+            <footer class="app-footer" aria-label="Application Footer">
+                <div class="app-footer-main">
+                    <div class="app-footer-col">
+                        <div class="app-footer-title">Contact Us</div>
+                        <div class="app-footer-support">
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.61a2 2 0 0 1-.45 2.11L8.03 9.91a16 16 0 0 0 6.06 6.06l1.47-1.25a2 2 0 0 1 2.11-.45c.84.29 1.71.5 2.61.62A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>+60 17-4151690</span>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+                                <a href="mailto:johannesric03@gmail.com">johannesric03@gmail.com</a>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row app-footer-address">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <address>University of Malaysia Sarawak, Jln Datuk Mohammad Musa, 94300 Kota Samarahan, Sarawak, Malaysia</address>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-footer-bottom">
+                    <div class="app-footer-copy">
+                    For clinical support purposes only. Final diagnosis and treatment decisions remain the responsibility of licensed medical professionals.
+                    </div>
+                    <div class="app-footer-meta">
+                        <div>Version 1.0.0 | Last updated: <span class="last-updated-date"></span></div>
+                        <div>&copy; 2026 Johannes Eric Ramesh. All Rights Reserved.</div>
+                    </div>
+                </div>
+            </footer>
+
+            <script>
+                (function() {
+                    const lastUpdated = document.querySelector('.last-updated-date');
+                    if (lastUpdated) {
+                        lastUpdated.textContent = new Date().toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    }
+                })();
+            </script>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/mobile-nav.js') }}"></script>
+    <script>
+        window.initMobileNav?.({
+            breakpoint: 900,
+            bodyClass: 'mobile-nav-enabled',
+            openClass: 'nav-open',
+            toggleSelector: '#mobileNavToggle',
+            overlaySelector: '#mobileNavOverlay',
+            sidebarSelector: '#sidebarNav',
+            navLinksSelector: '#sidebarNav .nav-links a'
+        });
+
+        // ========== PAGINATION & BULK ACTIONS ==========
+        let currentPage = 1;
+        let pageSize = 10;
+        let selectedRows = new Set();
+        let allRecords = [];
+        let filteredRecords = [];
+
+        // Load patient records on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+            loadPatientRecords();
+        });
+
+        function showEmptyState() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" style="text-align: center; padding: 40px; color: #95a5a6;">
+                        Unable to load patient records. Please try again later.
+                    </td>
+                </tr>
+            `;
+        }
+
+        function updateMetrics(records) {
+            const totalRecords = records.length;
+            const pneumoniaCases = records.filter(r => r.pneumonia_detected).length;
+            const normalCases = totalRecords - pneumoniaCases;
+
+            document.getElementById('total-records').textContent = totalRecords;
+            document.getElementById('pneumonia-count').textContent = pneumoniaCases;
+            document.getElementById('normal-count').textContent = normalCases;
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toISOString().split('T')[0];
+        }
+
+        // Load current user information
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    const user = result.user;
+                    
+                    // Update user avatar (initials)
+                    const names = user.name.split(' ');
+                    const initials = names.map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('userAvatarInitials').textContent = initials;
+                    
+                    // Update user details
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('userEmail').textContent = user.email;
+                    const userRoleElement = document.getElementById('userRole');
+                    userRoleElement.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+                    userRoleElement.className = `user-role role-${user.role}`;
+                    
+
+                } else {
+                    // Not logged in, redirect to login
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        // Clear all patient data from sessionStorage for security/privacy
+                        sessionStorage.removeItem('patient_name');
+                        sessionStorage.removeItem('patient_age');
+                        sessionStorage.removeItem('patient_medical_id');
+                        sessionStorage.removeItem('analysis_result');
+                        sessionStorage.removeItem('currentAnalysisId');
+                        
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error logging out. Please try again.');
+                }
+            }
+        });
+
+        // ========== FILTERING FUNCTIONS ==========
+
+        function applyFilters() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const diagnosisFilter = document.getElementById('diagnosisFilter').value;
+            const confidenceRange = parseInt(document.getElementById('confidenceRange').value);
+            const severityChecks = Array.from(document.querySelectorAll('.checkbox-group input[type="checkbox"]:not(.status-filter):checked')).map(c => parseInt(c.value));
+            const statusChecks = Array.from(document.querySelectorAll('.status-filter:checked')).map(c => c.value);
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+
+            // Filter records
+            filteredRecords = allRecords.filter(record => {
+                // Search filter
+                const patientIdMatch = (record.medical_id || '').toLowerCase().includes(searchInput);
+                const patientNameMatch = (record.patient_name || '').toLowerCase().includes(searchInput);
+                if (searchInput && !patientIdMatch && !patientNameMatch) return false;
+
+                // Diagnosis filter
+                const diagnosis = record.pneumonia_detected ? 'pneumonia' : 'normal';
+                if (diagnosisFilter && diagnosis !== diagnosisFilter) return false;
+
+                // Confidence filter
+                if (record.confidence < confidenceRange) return false;
+
+                // Severity filter
+                if (severityChecks.length > 0 && !severityChecks.includes(record.curb_score || 0)) return false;
+
+                // Status filter
+                if (statusChecks.length > 0) {
+                    const isReviewed = record.annotations !== null && record.annotations !== undefined;
+                    const recordStatus = isReviewed ? 'reviewed' : 'pending';
+                    if (!statusChecks.includes(recordStatus)) return false;
+                }
+
+                // Date range filter
+                const recordDate = formatDate(record.timestamp);
+                if (dateFrom && recordDate < dateFrom) return false;
+                if (dateTo && recordDate > dateTo) return false;
+
+                return true;
+            });
+
+            // Reset to page 1 and selections when filters change
+            currentPage = 1;
+            selectedRows.clear();
+            document.getElementById('tableSelectAllCheckbox').checked = false;
+            document.getElementById('bulk-actions-toolbar').style.display = 'none';
+
+            // Update metrics for filtered results
+            updateFilteredMetrics(filteredRecords);
+
+            // Update table with filtered records
+            displayPaginatedRecords();
+
+            // Show filter count
+            const countSpan = document.getElementById('filterCount');
+            if (filteredRecords.length !== allRecords.length) {
+                countSpan.textContent = `Showing ${filteredRecords.length} of ${allRecords.length} records`;
+                countSpan.style.display = 'block';
+            } else {
+                countSpan.style.display = 'none';
+            }
+        }
+
+        function updateFilteredMetrics(records) {
+            const totalRecords = records.length;
+            const pneumoniaCases = records.filter(r => r.pneumonia_detected).length;
+            const normalCases = totalRecords - pneumoniaCases;
+
+            document.getElementById('total-records').textContent = totalRecords;
+            document.getElementById('pneumonia-count').textContent = pneumoniaCases;
+            document.getElementById('normal-count').textContent = normalCases;
+        }
+
+        function resetFilters() {
+            // Clear all filter inputs
+            document.getElementById('searchInput').value = '';
+            document.getElementById('diagnosisFilter').value = '';
+            document.getElementById('confidenceRange').value = 0;
+            document.getElementById('confidenceValue').textContent = '0';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            document.querySelectorAll('.checkbox-group input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+            // Reset pagination and selection
+            filteredRecords = [...allRecords];
+            currentPage = 1;
+            selectedRows.clear();
+            document.getElementById('tableSelectAllCheckbox').checked = false;
+            document.getElementById('bulk-actions-toolbar').style.display = 'none';
+
+            // Reset table
+            updateMetrics(allRecords);
+            displayPaginatedRecords();
+            document.getElementById('filterCount').style.display = 'none';
+        }
+
+        function exportToCSV() {
+            if (filteredRecords.length === 0) {
+                alert('No records to export. Please adjust your filters.');
+                return;
+            }
+
+            // Prepare CSV headers
+            const headers = ['Date', 'Patient Name', 'Patient ID', 'Diagnosis', 'Confidence', 'Severity', 'Review Status'];
+            const rows = [];
+
+            // Add data rows
+            filteredRecords.forEach(record => {
+                const diagnosis = record.pneumonia_detected ? 'Pneumonia' : 'Normal';
+                const confidencePercent = Math.round(record.confidence);
+                const severityText = `Score ${record.curb_score || 0}`;
+                const isReviewed = record.annotations !== null && record.annotations !== undefined;
+                const statusText = isReviewed ? 'Reviewed' : 'Pending Review';
+
+                rows.push([
+                    formatDate(record.timestamp),
+                    record.patient_name || 'N/A',
+                    record.medical_id || 'N/A',
+                    diagnosis,
+                    `${confidencePercent}%`,
+                    severityText,
+                    statusText
+                ]);
+            });
+
+            // Create CSV content
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                // Escape quotes and wrap fields in quotes to handle commas
+                csvContent += row.map(field => {
+                    const fieldStr = String(field);
+                    if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+                        return '"' + fieldStr.replace(/"/g, '""') + '"';
+                    }
+                    return fieldStr;
+                }).join(',') + '\n';
+            });
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `patient_records_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function toggleFilterPanel() {
+            const content = document.getElementById('filterContent');
+            const btn = document.getElementById('filterToggleBtn');
+            content.classList.toggle('collapsed');
+            btn.classList.toggle('collapsed');
+        }
+
+        // Override original loadPatientRecords to store records globally
+        async function loadPatientRecords() {
+            try {
+                const response = await fetch('/api/patient-records');
+                const data = await response.json();
+
+                if (data.success) {
+                    allRecords = data.records; // Store globally
+                    filteredRecords = [...allRecords];
+                    currentPage = 1;
+                    selectedRows.clear();
+                    
+                    // Reset checkboxes
+                    document.getElementById('tableSelectAllCheckbox').checked = false;
+                    document.getElementById('bulk-actions-toolbar').style.display = 'none';
+                    
+                    updateMetrics(data.records);
+                    displayPaginatedRecords();
+                } else {
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading patient records:', error);
+                showEmptyState();
+            }
+        }
+
+        // ========== PAGINATION & BULK ACTIONS FUNCTIONS ==========
+
+        function changePageSize() {
+            pageSize = parseInt(document.getElementById('pageSize').value);
+            currentPage = 1;
+            selectedRows.clear();
+            document.getElementById('tableSelectAllCheckbox').checked = false;
+            document.getElementById('bulk-actions-toolbar').style.display = 'none';
+            displayPaginatedRecords();
+        }
+
+        function displayPaginatedRecords() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = filteredRecords.slice(start, end);
+
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 40px; color: #95a5a6;">No patient records found</td></tr>`;
+                updatePaginationControls();
+                return;
+            }
+
+            pageData.forEach(record => {
+                const diagnosis = record.pneumonia_detected ? 'Pneumonia' : 'Normal';
+                const diagnosisBadgeClass = record.pneumonia_detected ? 'pneumonia' : 'normal';
+                const confidencePercent = Math.round(record.confidence);
+                const confidenceClass = confidencePercent >= 80 ? 'high' : (confidencePercent >= 60 ? 'medium' : 'low');
+                const severityClass = `score-${record.curb_score || 0}`;
+                const severityText = `Score ${record.curb_score || 0}`;
+                const isSelected = selectedRows.has(String(record.id));
+                
+                // Determine review status based on annotations
+                const isReviewed = record.annotations !== null && record.annotations !== undefined;
+                const statusBadgeClass = isReviewed ? 'reviewed' : 'pending';
+                const statusIcon = isReviewed ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>';
+                const statusText = isReviewed ? 'Reviewed' : 'Pending Review';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" data-record-id="${record.id}" onchange="toggleRowSelection(${record.id})" ${isSelected ? 'checked' : ''}></td>
+                    <td>${formatDate(record.timestamp)}</td>
+                    <td>${record.patient_name || 'N/A'}</td>
+                    <td>${record.medical_id || 'N/A'}</td>
+                    <td><span class="diagnosis-badge ${diagnosisBadgeClass}">${diagnosis}</span></td>
+                    <td><span class="confidence-badge ${confidenceClass}">${confidencePercent}%</span></td>
+                    <td><span class="severity-badge ${severityClass}">${severityText}</span></td>
+                    <td><span class="status-badge ${statusBadgeClass}">${statusIcon} ${statusText}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            {% if current_user.role != 'admin' %}
+                            <button class="action-btn" onclick="viewRecord('${record.id}')" title="View record">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                                <span>View</span>
+                            </button>
+                            {% endif %}
+                            <button class="action-btn delete" onclick="deleteRecord('${record.id}')" title="Delete record">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                <span>Delete</span>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updatePaginationControls();
+            updateSelectionState();
+        }
+
+        function updatePaginationControls() {
+            const totalPages = Math.ceil(filteredRecords.length / pageSize);
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, filteredRecords.length);
+
+            document.getElementById('pageInfo').textContent = `Showing ${start}-${end} of ${filteredRecords.length} records`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+
+            const pageNumbers = document.getElementById('pageNumbers');
+            pageNumbers.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    const btn = document.createElement('button');
+                    btn.className = `page-number ${i === currentPage ? 'active' : ''}`;
+                    btn.textContent = i;
+                    btn.onclick = () => goToPage(i);
+                    pageNumbers.appendChild(btn);
+                } else if (i === 2 || i === totalPages - 1) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    span.style.padding = '6px 4px';
+                    pageNumbers.appendChild(span);
+                }
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                displayPaginatedRecords();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredRecords.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayPaginatedRecords();
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            displayPaginatedRecords();
+        }
+
+        function toggleTableSelectAll() {
+            const checkAll = document.getElementById('tableSelectAllCheckbox');
+            const checkboxes = document.querySelectorAll('#table-body input[type="checkbox"]');
+            
+            if (checkAll.checked) {
+                // Select all - add all visible records to selectedRows
+                checkboxes.forEach(cb => {
+                    cb.checked = true;
+                    const recordId = cb.getAttribute('data-record-id');
+                    selectedRows.add(recordId);
+                });
+            } else {
+                // Deselect all - clear selectedRows
+                checkboxes.forEach(cb => cb.checked = false);
+                selectedRows.clear();
+            }
+            updateSelectionState();
+        }
+
+        function toggleRowSelection(recordId) {
+            if (selectedRows.has(String(recordId))) {
+                selectedRows.delete(String(recordId));
+            } else {
+                selectedRows.add(String(recordId));
+            }
+            updateSelectionState();
+        }
+
+        function updateSelectionState() {
+            const toolbar = document.getElementById('bulk-actions-toolbar');
+            const selectAllCb = document.getElementById('tableSelectAllCheckbox');
+            const checkboxes = document.querySelectorAll('#table-body input[type="checkbox"]');
+            
+            if (selectedRows.size > 0) {
+                toolbar.style.display = 'flex';
+                document.getElementById('selectedCount').textContent = `${selectedRows.size} selected`;
+                
+                // Check if all visible rows are selected
+                const allVisibleSelected = Array.from(checkboxes).every(cb => selectedRows.has(cb.getAttribute('data-record-id')));
+                selectAllCb.checked = allVisibleSelected;
+            } else {
+                toolbar.style.display = 'none';
+                selectAllCb.checked = false;
+            }
+        }
+
+        function toggleSelectionMode() {
+            const table = document.getElementById('records-data');
+            table.classList.toggle('show-checkboxes');
+            
+            const btn = document.getElementById('selectMultipleBtn');
+            if (table.classList.contains('show-checkboxes')) {
+                btn.textContent = 'Exit Selection Mode';
+            } else {
+                btn.textContent = 'Select Multiple';
+                cancelBulkAction();
+            }
+        }
+
+        function cancelBulkAction() {
+            selectedRows.clear();
+            document.querySelectorAll('#table-body input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('tableSelectAllCheckbox').checked = false;
+            document.getElementById('bulk-actions-toolbar').style.display = 'none';
+        }
+
+        async function deleteSelectedRecords() {
+            if (selectedRows.size === 0) return;
+            if (!confirm(`Delete ${selectedRows.size} record(s)? This action cannot be undone.`)) return;
+
+            for (const id of selectedRows) {
+                try {
+                    await fetch(`/api/analysis/${id}`, { method: 'DELETE' });
+                } catch (error) {
+                    console.error('Error deleting record:', error);
+                }
+            }
+            loadPatientRecords();
+        }
+
+        // View individual record
+        async function viewRecord(recordId) {
+            try {
+                // Fetch full analysis details from API
+                const response = await fetch(`/api/analysis/${recordId}`);
+                if (!response.ok) {
+                    alert('Record not found');
+                    return;
+                }
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // Store complete analysis data in sessionStorage for results.html
+                    sessionStorage.setItem('analysis_result', JSON.stringify(result.data));
+                    // Navigate to results page
+                    window.location.href = '/results.html';
+                } else {
+                    alert('Error loading record: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error viewing record:', error);
+                alert('Error loading record details');
+            }
+        }
+
+        // Delete individual record
+        async function deleteRecord(recordId) {
+            if (!confirm('Delete this record? This action cannot be undone.')) return;
+            
+            try {
+                const response = await fetch(`/api/analysis/${recordId}`, { 
+                    method: 'DELETE' 
+                });
+                
+                if (response.ok) {
+                    // Reload records to refresh the table
+                    loadPatientRecords();
+                } else {
+                    alert('Error deleting record');
+                }
+            } catch (error) {
+                console.error('Error deleting record:', error);
+                alert('Error deleting record');
+            }
+        }
+
+        // ========== THEME TOGGLE ==========
+        (function() {
+            const html = document.documentElement;
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+            
+            // Load saved theme or default to light
+            function loadTheme() {
+                const saved = localStorage.getItem('theme_preference') || 'light';
+                applyTheme(saved);
+            }
+            
+            function applyTheme(theme) {
+                body.setAttribute('data-theme', theme);
+                localStorage.setItem('theme_preference', theme);
+                updateToggleButton(theme);
+            }
+            
+            function updateToggleButton(theme) {
+                if (themeToggle) {
+                    const moonIcon = themeToggle.querySelector('.icon-moon');
+                    const sunIcon = themeToggle.querySelector('.icon-sun');
+                    if (theme === 'dark') {
+                        if (moonIcon) moonIcon.style.display = 'none';
+                        if (sunIcon) sunIcon.style.display = 'block';
+                        themeToggle.classList.add('dark-mode');
+                        themeToggle.classList.remove('light-mode');
+                    } else {
+                        if (moonIcon) moonIcon.style.display = 'block';
+                        if (sunIcon) sunIcon.style.display = 'none';
+                        themeToggle.classList.add('light-mode');
+                        themeToggle.classList.remove('dark-mode');
+                    }
+                }
+            }
+            
+            // Toggle theme on button click
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const current = body.getAttribute('data-theme') || 'light';
+                    const newTheme = current === 'light' ? 'dark' : 'light';
+                    applyTheme(newTheme);
+                });
+            }
+            
+            // Load theme on page load
+            loadTheme();
+        })();
+    </script>
+</body>
+</html>

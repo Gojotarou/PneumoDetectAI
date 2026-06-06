@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Performance - PneumoDetect AI</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <style>
+        /* ========== STAFF PERFORMANCE PAGE ========== */
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: #95a5a6;
+            font-size: 14px;
+        }
+
+        .top-header {
+            margin-bottom: 24px;
+        }
+
+        .top-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .top-header p {
+            color: #95a5a6;
+            font-size: 14px;
+        }
+
+        /* Staff Grid */
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        /* Staff Card */
+        .staff-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e0e5f0;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .staff-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .staff-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+            border-color: #667eea;
+        }
+
+        /* Staff Card Header */
+        .staff-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f0f4ff;
+        }
+
+        .staff-info {
+            flex: 1;
+        }
+
+        .staff-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .staff-role {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .staff-email {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+
+        .staff-status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        /* Performance Metrics */
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metric-box {
+            background: #f8f9fb;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .metric-box:hover {
+            background: #f0f4ff;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #95a5a6;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            margin-top: 16px;
+            padding-top: 16px;
+        }
+
+        .progress-item {
+            margin-bottom: 12px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .progress-name {
+            font-size: 12px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .progress-percent {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e5f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* Last Activity */
+        .last-activity {
+            margin-top: 16px;
+            padding-top: 16px;
+            font-size: 12px;
+            color: #95a5a6;
+        }
+
+        .activity-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e0e5f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========== DARK MODE COMPREHENSIVE STYLING ========== */
+        body[data-theme="dark"] {
+            background-color: #0f172a;
+        }
+
+        /* Main content area */
+        body[data-theme="dark"] .main-content {
+            background-color: #0f172a;
+        }
+
+        /* Page headers */
+        body[data-theme="dark"] .page-header,
+        body[data-theme="dark"] .top-header {
+            background-color: #0f172a;
+        }
+
+        body[data-theme="dark"] .page-header h1,
+        body[data-theme="dark"] .top-header h1 {
+            color: #f1f5f9 !important;
+        }
+
+        body[data-theme="dark"] .page-header p,
+        body[data-theme="dark"] .top-header p {
+            color: #94a3b8 !important;
+        }
+
+        /* Staff Cards - Primary dark container */
+        body[data-theme="dark"] .staff-card {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        body[data-theme="dark"] .staff-card::before {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        body[data-theme="dark"] .staff-card:hover {
+            border-color: #667eea !important;
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.2) !important;
+            background: #232d3d !important;
+        }
+
+        /* Staff card header */
+        body[data-theme="dark"] .staff-card-header {
+            border-bottom-color: #334155 !important;
+        }
+
+        /* Staff name and role */
+        body[data-theme="dark"] .staff-name {
+            color: #f1f5f9 !important;
+        }
+
+        body[data-theme="dark"] .staff-role {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white !important;
+        }
+
+        body[data-theme="dark"] .staff-email {
+            color: #94a3b8 !important;
+        }
+
+        /* Staff avatar */
+        body[data-theme="dark"] .staff-status-icon {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* Metric boxes */
+        body[data-theme="dark"] .metric-box {
+            background: #334155 !important;
+            border: none;
+        }
+
+        body[data-theme="dark"] .metric-box:hover {
+            background: #475569 !important;
+        }
+
+        body[data-theme="dark"] .metric-label {
+            color: #94a3b8 !important;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        body[data-theme="dark"] .metric-value {
+            color: #38bdf8 !important;
+            font-weight: 700;
+        }
+
+        /* Progress section */
+        body[data-theme="dark"] .progress-section {
+            border: none !important;
+            background: transparent !important;
+        }
+
+        body[data-theme="dark"] .progress-label {
+            border: none !important;
+            background: transparent !important;
+        }
+
+        body[data-theme="dark"] .progress-item {
+            margin-bottom: 12px;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
+
+        body[data-theme="dark"] .progress-name {
+            color: #cbd5e1 !important;
+            font-weight: 600;
+        }
+
+        body[data-theme="dark"] .progress-percent {
+            color: #38bdf8 !important;
+            font-weight: 700;
+        }
+
+        body[data-theme="dark"] .progress-bar {
+            background: #475569 !important;
+        }
+
+        body[data-theme="dark"] .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2) !important;
+        }
+
+        /* Last activity */
+        body[data-theme="dark"] .last-activity {
+            color: #94a3b8 !important;
+        }
+
+        body[data-theme="dark"] .activity-label {
+            color: #cbd5e1 !important;
+            font-weight: 600;
+        }
+
+        /* Empty state */
+        body[data-theme="dark"] .empty-state {
+            color: #94a3b8 !important;
+        }
+
+        body[data-theme="dark"] .empty-state p {
+            color: #cbd5e1 !important;
+        }
+
+        body[data-theme="dark"] .empty-state svg {
+            opacity: 0.6;
+        }
+
+        /* Force override any conflicting global rules */
+        body[data-theme="dark"] .staff-card p,
+        body[data-theme="dark"] .staff-card span,
+        body[data-theme="dark"] .staff-card div {
+            color: inherit;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .staff-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .performance-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .staff-card {
+                padding: 16px;
+            }
+
+            .staff-name {
+                font-size: 14px;
+            }
+
+            .metric-value {
+                font-size: 18px;
+            }
+        }
+
+        /* Download Report Button */
+        .btn-download-report {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+        }
+
+        .btn-download-report:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.45);
+        }
+
+        .btn-download-report:active {
+            transform: translateY(0);
+        }
+
+        body[data-theme="dark"] .btn-download-report {
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+            color: white;
+        }
+
+        /* ========== AGGRESSIVE DARK MODE OVERRIDES ========== */
+        /* Override the global dark-mode.css div color rule */
+        body[data-theme="dark"] .staff-card * {
+            color: inherit !important;
+        }
+
+        /* Explicit colors for all text elements in dark mode */
+        body[data-theme="dark"] .metric-label {
+            color: #cbd5e1 !important;
+        }
+
+        body[data-theme="dark"] .metric-value {
+            color: #38bdf8 !important;
+        }
+
+        body[data-theme="dark"] .staff-name {
+            color: #f1f5f9 !important;
+        }
+
+        body[data-theme="dark"] .staff-role {
+            color: white !important;
+        }
+
+        body[data-theme="dark"] .staff-email {
+            color: #94a3b8 !important;
+        }
+
+        body[data-theme="dark"] .progress-name {
+            color: #cbd5e1 !important;
+        }
+
+        body[data-theme="dark"] .progress-percent {
+            color: #38bdf8 !important;
+        }
+
+        body[data-theme="dark"] .activity-label {
+            color: #cbd5e1 !important;
+        }
+
+        body[data-theme="dark"] .last-activity {
+            color: #94a3b8 !important;
+        }
+
+        body[data-theme="dark"] .empty-state p {
+            color: #cbd5e1 !important;
+        }
+    </style>
+</head>
+<body data-theme="light" class="mobile-nav-enabled">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebarNav">
+            <div class="logo">
+                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon icon-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-medium-icon lucide-sun-medium icon-sun" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 3v1"/><path d="M12 20v1"/><path d="M3 12h1"/><path d="M20 12h1"/><path d="m18.364 5.636-.707.707"/><path d="m6.343 17.657-.707.707"/><path d="m5.636 5.636.707.707"/><path d="m17.657 17.657.707.707"/></svg>
+                </button>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Dashboard</a>
+                <a href="{{ url_for('report') }}" {% if request.endpoint == 'report' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>Patient History</a>
+                <a href="{{ url_for('management') }}" {% if request.endpoint == 'management' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m14.305 16.53.923-.382"/><path d="m15.228 13.852-.923-.383"/><path d="m16.852 12.228-.383-.923"/><path d="m16.852 17.772-.383.924"/><path d="m19.148 12.228.383-.923"/><path d="m19.53 18.696-.382-.924"/><path d="m20.772 13.852.924-.383"/><path d="m20.772 16.148.924.383"/><circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/></svg></span>Management</a>
+                <a href="{{ url_for('analytics') }}" {% if request.endpoint == 'analytics' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="3" y2="20"/><line x1="21" y1="20" x2="3" y2="20"/><line x1="7" y1="15" x2="7" y2="20"/><line x1="12" y1="10" x2="12" y2="20"/><line x1="17" y1="5" x2="17" y2="20"/></svg></span>Analytics</a>
+                <a href="{{ url_for('staff_performance') }}" {% if request.endpoint == 'staff_performance' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Staff Performance</a>
+                {% if current_user.role != 'admin' %}
+                <a href="{{ url_for('alerts') }}" {% if request.endpoint == 'alerts' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>Alerts</a>
+                {% endif %}
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatarInitials">--</div>
+                <div class="user-details">
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userEmail">...</p>
+                    <span id="userRole" class="user-role">--</span>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </aside>
+
+        <button class="mobile-nav-overlay" id="mobileNavOverlay" aria-label="Close menu"></button>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="mobile-nav-bar">
+                <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebarNav">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="mobile-nav-title">PneumoDetect</div>
+            </div>
+
+            <div class="top-header">
+                <div>
+                    <h1>Staff Performance</h1>
+                    <p>Track individual staff member metrics and performance indicators</p>
+                </div>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="page-header" style="display:flex; align-items:center; justify-content:space-between;">
+                    <div>
+                        <h1>Team Performance Overview</h1>
+                        <p>Real-time performance metrics for all doctors and nurses</p>
+                    </div>
+                    <button class="btn-download-report" id="downloadReportBtn" onclick="generateReport()" title="Download PDF Report">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download Report
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" style="text-align: center; padding: 60px 20px;">
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top: 16px; color: #95a5a6;">Loading staff performance data...</p>
+                </div>
+
+                <!-- Staff Grid -->
+                <div id="staffContainer" class="staff-grid" style="display: none;"></div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <p>No staff members found</p>
+                    <p style="font-size: 12px; margin-top: 8px;">Add staff members through the Management page</p>
+                </div>
+            </div>
+
+            <footer class="app-footer" aria-label="Application Footer">
+                <div class="app-footer-main">
+                    <div class="app-footer-col">
+                        <div class="app-footer-title">Contact Us</div>
+                        <div class="app-footer-support">
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.61a2 2 0 0 1-.45 2.11L8.03 9.91a16 16 0 0 0 6.06 6.06l1.47-1.25a2 2 0 0 1 2.11-.45c.84.29 1.71.5 2.61.62A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>+60 17-4151690</span>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+                                <a href="mailto:johannesric03@gmail.com">johannesric03@gmail.com</a>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row app-footer-address">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <address>University of Malaysia Sarawak, Jln Datuk Mohammad Musa, 94300 Kota Samarahan, Sarawak, Malaysia</address>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-footer-bottom">
+                    <div class="app-footer-copy">
+                    For clinical support purposes only. Final diagnosis and treatment decisions remain the responsibility of licensed medical professionals.
+                    </div>
+                    <div class="app-footer-meta">
+                        <div>Version 1.0.0 | Last updated: <span class="last-updated-date"></span></div>
+                        <div>&copy; 2026 Johannes Eric Ramesh. All Rights Reserved.</div>
+                    </div>
+                </div>
+            </footer>
+
+            <script>
+                (function() {
+                    const lastUpdated = document.querySelector('.last-updated-date');
+                    if (lastUpdated) {
+                        lastUpdated.textContent = new Date().toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    }
+                })();
+            </script>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/mobile-nav.js') }}"></script>
+    <script>
+        // Format ISO datetime to local time
+        function formatLocalDateTime(isoString) {
+            if (!isoString) return 'No activity';
+            try {
+                // Parse the ISO string - JavaScript Date constructor handles ISO 8601 correctly
+                const date = new Date(isoString);
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    return isoString;
+                }
+                
+                // Format as dd/mm/yyyy HH:mm:ss
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                
+                return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+            } catch (e) {
+                console.error('Error formatting date:', e, isoString);
+                return isoString;
+            }
+        }
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        window.initMobileNav?.({
+            breakpoint: 900,
+            bodyClass: 'mobile-nav-enabled',
+            openClass: 'nav-open',
+            toggleSelector: '#mobileNavToggle',
+            overlaySelector: '#mobileNavOverlay',
+            sidebarSelector: '#sidebarNav',
+            navLinksSelector: '#sidebarNav .nav-links a'
+        });
+
+        function setTheme(theme) {
+            body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme_preference', theme);
+            updateThemeIcons();
+        }
+
+        function updateThemeIcons() {
+            const currentTheme = body.getAttribute('data-theme') || 'light';
+            const moonIcon = document.querySelector('.icon-moon');
+            const sunIcon = document.querySelector('.icon-sun');
+
+            if (currentTheme === 'dark') {
+                moonIcon?.style.setProperty('display', 'none');
+                sunIcon?.style.setProperty('display', 'block');
+            } else {
+                moonIcon?.style.setProperty('display', 'block');
+                sunIcon?.style.setProperty('display', 'none');
+            }
+        }
+
+        themeToggle?.addEventListener('click', () => {
+            const currentTheme = body.getAttribute('data-theme') || 'light';
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+
+        // Initialize theme from localStorage
+        const savedTheme = localStorage.getItem('theme_preference') || 'light';
+        setTheme(savedTheme);
+
+        // Load User Info
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const data = await response.json();
+
+                if (data.success) {
+                    const user = data.user;
+                    const displayName = user.name || user.username || 'Administrator';
+                    adminNameCache = displayName;
+                    document.getElementById('userName').textContent = displayName;
+                    document.getElementById('userEmail').textContent = user.email;
+                    const userRoleElement = document.getElementById('userRole'); userRoleElement.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1); userRoleElement.className = `user-role role-${user.role}`;
+                    document.getElementById('userAvatarInitials').textContent = displayName[0].toUpperCase() + (displayName[1] || '').toUpperCase();
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        // Load Staff Performance
+        async function loadStaffPerformance() {
+            try {
+                const response = await fetch('/api/staff-performance');
+                const data = await response.json();
+
+                console.log('Staff Performance Response:', data);
+
+                const loadingState = document.getElementById('loadingState');
+                const staffContainer = document.getElementById('staffContainer');
+                const emptyState = document.getElementById('emptyState');
+
+                loadingState.style.display = 'none';
+
+                if (!data.success) {
+                    console.error('API Error:', data.error);
+                    emptyState.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <p>Error loading staff data</p>
+                        <p style="font-size: 12px; margin-top: 8px;">${data.error || 'Unknown error'}</p>
+                    `;
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                if (!data.staff || data.staff.length === 0) {
+                    console.warn('No staff members found');
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                // Cache for report generation
+                staffDataCache = data.staff;
+
+                staffContainer.style.display = 'grid';
+                staffContainer.innerHTML = data.staff
+                    .sort((a, b) => {
+                        if (!a.last_activity) return 1;
+                        if (!b.last_activity) return -1;
+                        return new Date(b.last_activity) - new Date(a.last_activity);
+                    })
+                    .map(staff => `
+                    <div class="staff-card">
+                        <div class="staff-card-header">
+                            <div class="staff-info">
+                                <div class="staff-name">${staff.name}</div>
+                                <div class="staff-role">${staff.role}</div>
+                                <div class="staff-email">${staff.email}</div>
+                            </div>
+                            <div class="staff-status-icon">${staff.name.charAt(0).toUpperCase()}</div>
+                        </div>
+
+                        <div class="performance-metrics">
+                            <div class="metric-box">
+                                <div class="metric-value">${staff.analyses_count}</div>
+                                <div class="metric-label">${staff.role === 'doctor' ? 'Reviewed' : 'Uploaded'}</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-value">${staff.assigned_patients}</div>
+                                <div class="metric-label">Assigned Patients</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-value">${staff.avg_confidence.toFixed(1)}%</div>
+                                <div class="metric-label">Avg Confidence</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-value">${staff.pneumonia_detection_rate.toFixed(1)}%</div>
+                                <div class="metric-label">Pneumonia Rate</div>
+                            </div>
+                        </div>
+
+                        <div class="progress-section">
+                            <div class="progress-item">
+                                <div class="progress-label">
+                                    <span class="progress-name">Avg Confidence Score</span>
+                                    <span class="progress-percent">${staff.avg_confidence.toFixed(1)}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${staff.avg_confidence}%"></div>
+                                </div>
+                            </div>
+                            <div class="progress-item">
+                                <div class="progress-label">
+                                    <span class="progress-name">Pneumonia Detection Rate</span>
+                                    <span class="progress-percent">${staff.pneumonia_detection_rate.toFixed(1)}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${staff.pneumonia_detection_rate}%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="last-activity">
+                            <div class="activity-label">Last Activity</div>
+                            <div>${formatLocalDateTime(staff.last_activity)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading staff performance:', error);
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('emptyState').innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <p>Error loading staff performance</p>
+                    <p style="font-size: 12px; margin-top: 8px;">Check browser console for details</p>
+                `;
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        }
+
+        // Store loaded staff data globally for report generation
+        let staffDataCache = [];
+        let adminNameCache = 'Administrator';
+
+        function generateReport() {
+            if (!staffDataCache.length) {
+                alert('No staff data loaded yet. Please wait for the page to finish loading.');
+                return;
+            }
+
+            const now = new Date();
+            const reportDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+            const reportTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            const totalAnalyses = staffDataCache.reduce((s, x) => s + x.analyses_count, 0);
+            const totalPatients = staffDataCache.reduce((s, x) => s + x.assigned_patients, 0);
+            const avgConfidence = staffDataCache.length ? (staffDataCache.reduce((s, x) => s + x.avg_confidence, 0) / staffDataCache.length).toFixed(1) : '0.0';
+            const doctors = staffDataCache.filter(x => x.role === 'doctor').length;
+            const nurses = staffDataCache.filter(x => x.role === 'nurse').length;
+
+            const staffRows = staffDataCache
+                .sort((a, b) => {
+                    if (!a.last_activity) return 1;
+                    if (!b.last_activity) return -1;
+                    return new Date(b.last_activity) - new Date(a.last_activity);
+                })
+                .map((staff, i) => {
+                    const confClass = staff.avg_confidence >= 85 ? 'conf-high' : staff.avg_confidence >= 60 ? 'conf-med' : 'conf-low';
+                    const pneuClass = staff.pneumonia_detection_rate >= 70 ? 'pneu-high' : staff.pneumonia_detection_rate >= 40 ? 'pneu-med' : 'pneu-low';
+                    return `
+                <tr class="${i % 2 === 0 ? 'even' : 'odd'}">
+                    <td>${i + 1}</td>
+                    <td><span class="staff-name-cell">${staff.name}</span></td>
+                    <td><span class="role-badge ${staff.role}">${staff.role.charAt(0).toUpperCase() + staff.role.slice(1)}</span></td>
+                    <td>${staff.email}</td>
+                    <td class="num">${staff.analyses_count}</td>
+                    <td class="num">${staff.assigned_patients}</td>
+                    <td class="num ${confClass}">${staff.avg_confidence.toFixed(1)}%</td>
+                    <td class="num ${pneuClass}">${staff.pneumonia_detection_rate.toFixed(1)}%</td>
+                    <td>${formatLocalDateTime(staff.last_activity)}</td>
+                </tr>`;
+                }).join('');
+
+            const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Staff Performance Report - PneumoDetect AI</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; color: #0f172a; background: #ffffff; font-size: 13px; }
+
+    /* ── HERO BANNER ── */
+    .hero {
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 70%, #4c1d95 100%);
+        padding: 40px 48px 36px;
+        position: relative;
+        overflow: hidden;
+    }
+    .hero::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse at 80% 50%, rgba(102,126,234,0.25) 0%, transparent 60%),
+                    radial-gradient(ellipse at 20% 80%, rgba(118,75,162,0.2) 0%, transparent 50%);
+    }
+    .hero::after {
+        content: '';
+        position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(102,126,234,0.8), rgba(118,75,162,0.8), transparent);
+    }
+    .hero-inner { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; }
+    .hero-brand { display: flex; align-items: center; gap: 16px; }
+    .brand-icon {
+        width: 52px; height: 52px;
+        background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(10px);
+    }
+    .brand-name { font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; }
+    .brand-sub { font-size: 10px; color: rgba(165,180,252,0.9); font-weight: 500; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+    .hero-meta { text-align: right; }
+    .hero-meta .report-title { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px; }
+    .hero-meta .meta-row { font-size: 11px; color: rgba(203,213,225,0.85); margin-bottom: 3px; }
+    .hero-meta .meta-row span { color: rgba(165,180,252,1); font-weight: 600; }
+    .confidential-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        margin-top: 10px; padding: 4px 12px;
+        background: rgba(251,191,36,0.15); color: #fbbf24;
+        border: 1px solid rgba(251,191,36,0.4);
+        border-radius: 20px; font-size: 9px; font-weight: 700;
+        letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .confidential-badge::before { content: '●'; font-size: 7px; }
+
+    /* ── BODY WRAPPER ── */
+    .report-body { padding: 36px 48px 50px; }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 10px; font-weight: 700; color: #667eea;
+        text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px;
+    }
+    .section-label::after {
+        content: ''; flex: 1; height: 1px;
+        background: linear-gradient(90deg, #e0e7ff, transparent);
+    }
+
+    /* ── SUMMARY CARDS ── */
+    .summary-section { margin-bottom: 36px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+    .summary-card {
+        background: #f8faff;
+        border: 1px solid #e0e7ff;
+        border-radius: 12px;
+        padding: 18px 14px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .summary-card::before {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+    .summary-card .val {
+        font-size: 28px; font-weight: 900; color: #4f46e5;
+        line-height: 1; margin-bottom: 6px; letter-spacing: -1px;
+    }
+    .summary-card .lbl {
+        font-size: 9px; color: #64748b; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.8px;
+    }
+
+    /* ── TABLE ── */
+    .table-section { margin-bottom: 36px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead tr {
+        background: linear-gradient(135deg, #1e1b4b, #312e81);
+        color: white;
+    }
+    thead th {
+        padding: 12px 14px; text-align: left;
+        font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.8px;
+        white-space: nowrap; color: rgba(199,210,254,0.95);
+    }
+    thead th.num { text-align: center; }
+    thead th:first-child { border-radius: 8px 0 0 0; padding-left: 18px; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+    tbody tr { transition: background 0.15s; }
+    tbody tr.even { background: #f8faff; }
+    tbody tr.odd { background: #ffffff; }
+    td {
+        padding: 11px 14px; border-bottom: 1px solid #eef0f8;
+        vertical-align: middle; color: #334155;
+    }
+    td.num { text-align: center; font-weight: 700; color: #4f46e5; }
+    td:first-child { color: #a0aec0; font-size: 11px; font-weight: 600; width: 36px; padding-left: 18px; }
+    .staff-name-cell { font-weight: 700; color: #1e293b; }
+    .role-badge {
+        padding: 3px 11px; border-radius: 20px;
+        font-size: 9px; font-weight: 800;
+        text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .role-badge.doctor { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+    .role-badge.nurse  { background: #fce7f3; color: #9d174d; border: 1px solid #fbcfe8; }
+    .conf-high { color: #059669; font-weight: 700; }
+    .conf-med  { color: #d97706; font-weight: 700; }
+    .conf-low  { color: #dc2626; font-weight: 700; }
+    .pneu-high { color: #dc2626; font-weight: 700; }
+    .pneu-med  { color: #d97706; font-weight: 700; }
+    .pneu-low  { color: #059669; font-weight: 700; }
+
+    /* ── INSIGHT STRIP ── */
+    .insight-strip {
+        background: linear-gradient(135deg, #f0f4ff, #f5f3ff);
+        border: 1px solid #e0e7ff;
+        border-left: 4px solid #667eea;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 36px;
+        display: flex; gap: 32px;
+    }
+    .insight-item .il { font-size: 9px; color: #667eea; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .insight-item .iv { font-size: 15px; font-weight: 800; color: #1e293b; }
+
+    /* ── FOOTER ── */
+    .report-footer {
+        margin-top: 40px;
+        padding-top: 22px;
+        border-top: 1px solid #e0e7ff;
+        display: flex; justify-content: space-between; align-items: flex-end;
+    }
+    .footer-left .fl-title { font-size: 13px; font-weight: 800; color: #4f46e5; margin-bottom: 4px; }
+    .footer-left p { font-size: 10px; color: #94a3b8; margin-bottom: 2px; }
+    .footer-sig { text-align: right; }
+    .footer-sig .sig-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 28px; }
+    .footer-sig .sig-line { border-top: 1.5px solid #334155; width: 200px; margin: 0 0 8px auto; }
+    .footer-sig .sig-name { font-size: 12px; font-weight: 700; color: #1e293b; }
+    .footer-sig .sig-role { font-size: 10px; color: #64748b; }
+    .page-watermark {
+        position: fixed; bottom: 18px; right: 30px;
+        font-size: 9px; color: #cbd5e1;
+        font-weight: 500; letter-spacing: 0.5px;
+    }
+
+    @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .no-print { display: none !important; }
+    }
+</style>
+</head>
+<body>
+
+<!-- Hero Banner -->
+<div class="hero">
+    <div class="hero-inner">
+        <div class="hero-brand">
+            <div class="brand-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(165,180,252,1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+            </div>
+            <div>
+                <div class="brand-name">PneumoDetect AI</div>
+                <div class="brand-sub">Hospital Management System</div>
+            </div>
+        </div>
+        <div class="hero-meta">
+            <div class="report-title">Staff Performance Report</div>
+            <div class="meta-row">Generated: <span>${reportDate} at ${reportTime}</span></div>
+            <div class="meta-row">Prepared by: <span>${adminNameCache}</span></div>
+            <div class="meta-row">Purpose: <span>Administrative Audit &amp; Documentation</span></div>
+            <div class="confidential-badge">Strictly Confidential</div>
+        </div>
+    </div>
+</div>
+
+<div class="report-body">
+
+    <!-- Executive Summary -->
+    <div class="summary-section">
+        <div class="section-label">Executive Summary</div>
+        <div class="summary-grid">
+            <div class="summary-card"><div class="val">${staffDataCache.length}</div><div class="lbl">Total Staff</div></div>
+            <div class="summary-card"><div class="val">${doctors}</div><div class="lbl">Doctors</div></div>
+            <div class="summary-card"><div class="val">${nurses}</div><div class="lbl">Nurses</div></div>
+            <div class="summary-card"><div class="val">${totalAnalyses}</div><div class="lbl">Total Analyses</div></div>
+            <div class="summary-card"><div class="val">${avgConfidence}%</div><div class="lbl">Avg Confidence</div></div>
+        </div>
+    </div>
+
+    <!-- Key Insights Strip -->
+    <div class="insight-strip">
+        <div class="insight-item"><div class="il">Top Performer</div><div class="iv">${staffDataCache.sort((a,b) => b.analyses_count - a.analyses_count)[0]?.name || '—'}</div></div>
+        <div class="insight-item"><div class="il">Highest Confidence</div><div class="iv">${staffDataCache.sort((a,b) => b.avg_confidence - a.avg_confidence)[0]?.name || '—'} (${Math.max(...staffDataCache.map(s=>s.avg_confidence)).toFixed(1)}%)</div></div>
+        <div class="insight-item"><div class="il">Total Assigned Patients</div><div class="iv">${totalPatients}</div></div>
+        <div class="insight-item"><div class="il">Report Period</div><div class="iv">${reportDate}</div></div>
+    </div>
+
+    <!-- Staff Metrics Table -->
+    <div class="table-section">
+        <div class="section-label">Individual Staff Metrics</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Staff Member</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th class="num">Analyses</th>
+                    <th class="num">Patients</th>
+                    <th class="num">Avg Confidence</th>
+                    <th class="num">Pneumonia Rate</th>
+                    <th>Last Activity</th>
+                </tr>
+            </thead>
+            <tbody>${staffRows}</tbody>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="report-footer">
+        <div class="footer-left">
+            <div class="fl-title">PneumoDetect AI</div>
+            <p>Staff Performance Report &bull; ${reportDate}</p>
+            <p>This document is strictly confidential and intended for authorized personnel only.</p>
+        </div>
+        <div class="footer-sig">
+            <div class="sig-label">Authorized Signature</div>
+            <div class="sig-line"></div>
+            <div class="sig-name">${adminNameCache}</div>
+            <div class="sig-role">Administrator &mdash; PneumoDetect AI</div>
+        </div>
+    </div>
+</div>
+
+<div class="page-watermark">PneumoDetect AI &bull; Confidential</div>
+<script>window.onload = function() { window.print(); }<\/script>
+</body></html>`;
+
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+        }
+
+        // Logout
+        document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+            try {
+                if (!confirm('Are you sure you want to logout?')) {
+                    return;
+                }
+
+                const response = await fetch('/api/logout', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Error logging out. Please try again.');
+            }
+        });
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserInfo();
+            loadStaffPerformance();
+        });
+    </script>
+</body>
+</html>

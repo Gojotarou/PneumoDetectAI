@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert System - PneumoDetect AI</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <style>
+        /* ========== FILTER PANEL STYLES ========== */
+        .filter-panel {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .filter-header:hover {
+            background: #f0f2f5;
+        }
+
+        .filter-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #667eea;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+
+        .filter-toggle-btn.collapsed {
+            transform: rotate(-180deg);
+        }
+
+        .filter-content {
+            padding: 20px;
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+            opacity: 1;
+        }
+
+        .filter-content.collapsed {
+            max-height: 0;
+            padding: 0 20px;
+            opacity: 0;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+            color: #2c3e50;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #f9fafb;
+        }
+
+        .filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .btn-reset-filters {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reset-filters:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* DARK MODE FOR FILTER PANEL */
+        body[data-theme="dark"] .filter-panel {
+            background: #2a2e3e;
+            border-color: #444;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        body[data-theme="dark"] .filter-header {
+            background: #35394a;
+            border-bottom-color: #444;
+        }
+
+        body[data-theme="dark"] .filter-header:hover {
+            background: #3f4455;
+        }
+
+        body[data-theme="dark"] .filter-header h3 {
+            color: #e0e5f0;
+        }
+
+        body[data-theme="dark"] .filter-group label {
+            color: #9db4d4;
+        }
+
+        body[data-theme="dark"] .filter-group input,
+        body[data-theme="dark"] .filter-group select {
+            background: #3a3e50;
+            color: #e0e5f0;
+            border-color: #444;
+        }
+
+        body[data-theme="dark"] .filter-group input:focus,
+        body[data-theme="dark"] .filter-group select:focus {
+            background: #424a60;
+            border-color: #667eea;
+        }
+
+        body[data-theme="dark"] .filter-actions {
+            border-top-color: #444;
+        }
+
+        body[data-theme="dark"] .btn-reset-filters {
+            background: #3a3e50;
+            border-color: #444;
+            color: #9db4d4;
+        }
+
+        body[data-theme="dark"] .btn-reset-filters:hover {
+            background: #444;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* DARK MODE FOR PAGINATION CONTROLS */
+        body[data-theme="dark"] .pagination-controls {
+            background: #2a2e3e !important;
+            border-color: #444 !important;
+        }
+
+        body[data-theme="dark"] .pagination-controls > div:first-child span {
+            color: #b8c5d6 !important;
+        }
+
+        body[data-theme="dark"] #alertPageSize {
+            background: #3a3e50 !important;
+            color: #e0e5f0 !important;
+            border-color: #444 !important;
+        }
+
+        body[data-theme="dark"] #alertPageSize:hover,
+        body[data-theme="dark"] #alertPageSize:focus {
+            background: #424a60 !important;
+            border-color: #667eea !important;
+        }
+
+        body[data-theme="dark"] #alertPageSize option {
+            background: #2a2e3e;
+            color: #e0e5f0;
+        }
+
+        body[data-theme="dark"] #alertPageInfo {
+            color: #b8c5d6 !important;
+        }
+
+        body[data-theme="dark"] #alertPrevBtn,
+        body[data-theme="dark"] #alertNextBtn {
+            background: #3a3e50 !important;
+            color: #e0e5f0 !important;
+            border-color: #444 !important;
+        }
+
+        body[data-theme="dark"] #alertPrevBtn:hover,
+        body[data-theme="dark"] #alertNextBtn:hover {
+            background: #424a60 !important;
+            border-color: #667eea !important;
+            color: #e0e5f0 !important;
+        }
+
+        body[data-theme="dark"] #alertPrevBtn:disabled,
+        body[data-theme="dark"] #alertNextBtn:disabled {
+            background: #35394a !important;
+            color: #667777 !important;
+            border-color: #3a3e50 !important;
+            cursor: not-allowed !important;
+            opacity: 0.5 !important;
+        }
+
+        body[data-theme="dark"] .page-number {
+            background: #3a3e50 !important;
+            color: #b8c5d6 !important;
+            border-color: #444 !important;
+        }
+
+        body[data-theme="dark"] .page-number:hover {
+            background: #424a60 !important;
+            border-color: #667eea !important;
+            color: #e0e5f0 !important;
+        }
+
+        body[data-theme="dark"] .page-number.active {
+            background: #3f3faa !important;
+            border-color: #667eea !important;
+            color: #e0e5f0 !important;
+        }
+
+        @media (max-width: 768px) {
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* PAGINATION CONTROLS BASE STYLES */
+        .pagination-controls {
+            background: white;
+            border: 1px solid #dee2e6;
+        }
+
+        .pagination-btn {
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .page-number {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .page-number:hover {
+            background: #f8f9fa !important;
+            border-color: #667eea !important;
+            color: #667eea !important;
+        }
+
+        .page-number.active {
+            background: #f0f2ff !important;
+            border-color: #667eea !important;
+            color: #667eea !important;
+        }
+    </style>
+</head>
+<body data-theme="light" class="mobile-nav-enabled">
+    <div class="app-container">
+        <aside class="sidebar" id="sidebarNav">
+            <div class="logo">
+                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon icon-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-medium-icon lucide-sun-medium icon-sun" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 3v1"/><path d="M12 20v1"/><path d="M3 12h1"/><path d="M20 12h1"/><path d="m18.364 5.636-.707.707"/><path d="m6.343 17.657-.707.707"/><path d="m5.636 5.636.707.707"/><path d="m17.657 17.657.707.707"/></svg>
+                </button>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Dashboard</a>
+                {% if current_user.role in ['doctor', 'nurse'] %}
+                    <a href="{{ url_for('new_analysis') }}" {% if request.endpoint == 'new_analysis' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg></span>New Analysis</a>
+                {% endif %}
+                <a href="{{ url_for('report') }}" {% if request.endpoint == 'report' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>Patient History</a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('management') }}" {% if request.endpoint == 'management' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m14.305 16.53.923-.382"/><path d="m15.228 13.852-.923-.383"/><path d="m16.852 12.228-.383-.923"/><path d="m16.852 17.772-.383.924"/><path d="m19.148 12.228.383-.923"/><path d="m19.53 18.696-.382-.924"/><path d="m20.772 13.852.924-.383"/><path d="m20.772 16.148.924.383"/><circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/></svg></span>Management</a>
+                {% endif %}
+                <a href="{{ url_for('analytics') }}" {% if request.endpoint == 'analytics' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="3" y2="20"/><line x1="21" y1="20" x2="3" y2="20"/><line x1="7" y1="15" x2="7" y2="20"/><line x1="12" y1="10" x2="12" y2="20"/><line x1="17" y1="5" x2="17" y2="20"/></svg></span>Analytics</a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('staff_performance') }}" {% if request.endpoint == 'staff_performance' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Staff Performance</a>
+                {% endif %}
+                {% if current_user.role != 'admin' %}
+                <a href="{{ url_for('alerts') }}" {% if request.endpoint == 'alerts' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>Alerts</a>
+                {% endif %}
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatarInitials">--</div>
+                <div class="user-details">
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userEmail">...</p>
+                    <span id="userRole" class="user-role">--</span>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </aside>
+
+        <button class="mobile-nav-overlay" id="mobileNavOverlay" aria-label="Close menu"></button>
+
+        <main class="main-content">
+            <div class="mobile-nav-bar">
+                <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebarNav">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="mobile-nav-title">PneumoDetect</div>
+            </div>
+
+            <div class="top-header">
+                <h1>Alert System</h1>
+                <p>Automated alerts for severe and critical pneumonia cases</p>
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Alert Metrics -->
+                <div class="alerts-metrics-grid">
+                    <div class="alert-metric-card">
+                        <div>
+                            <h3>Critical Alerts</h3>
+                            <div class="alert-metric-value" id="critical-count">0</div>
+                        </div>
+                        <div class="alert-metric-icon critical"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
+                    </div>
+                    <div class="alert-metric-card">
+                        <div>
+                            <h3>Moderate Alerts</h3>
+                            <div class="alert-metric-value" id="moderate-count">0</div>
+                        </div>
+                        <div class="alert-metric-icon moderate"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></div>
+                    </div>
+                    <div class="alert-metric-card">
+                        <div>
+                            <h3>Pending Alerts</h3>
+                            <div class="alert-metric-value" id="pending-count">0</div>
+                        </div>
+                        <div class="alert-metric-icon progress"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+                    </div>
+                    <div class="alert-metric-card">
+                        <div>
+                            <h3>Acknowledged</h3>
+                            <div class="alert-metric-value" id="acknowledged-count">0</div>
+                        </div>
+                        <div class="alert-metric-icon resolved"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                    </div>
+                </div>
+
+                <!-- Alert Tabs -->
+                <div style="display: flex; gap: 12px; margin: 24px 0 16px; border-bottom: 2px solid #e9ecef;">
+                    <button id="tab-pending" class="alert-tab active">
+                        🔴 Pending <span id="pending-badge" style="display: inline-block; background: #dc3545; color: white; border-radius: 12px; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 12px; margin-left: 6px;">0</span>
+                    </button>
+                    <button id="tab-acknowledged" class="alert-tab">
+                        ✓ Acknowledged <span id="acknowledged-badge" style="display: inline-block; background: #4caf50; color: white; border-radius: 12px; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 12px; margin-left: 6px;">0</span>
+                    </button>
+                </div>
+
+                <!-- Alert Filter Panel -->
+                <div class="filter-panel">
+                    <div class="filter-header" onclick="toggleAlertFilterPanel(this)">
+                        <h3><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 8px; vertical-align: middle;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>Filter Alerts</h3>
+                        <button class="filter-toggle-btn" title="Toggle filters">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+                        </button>
+                    </div>
+                    <div class="filter-content collapsed">
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label for="alertPatientSearch">Patient Name / ID</label>
+                                <input type="text" id="alertPatientSearch" placeholder="Search patient..." onkeyup="filterAlerts()">
+                            </div>
+                            <div class="filter-group">
+                                <label for="alertUrgencyFilter">Urgency Level</label>
+                                <select id="alertUrgencyFilter" onchange="filterAlerts()">
+                                    <option value="">All Levels</option>
+                                    <option value="CRITICAL">🔴 Critical</option>
+                                    <option value="HIGH">🟠 High</option>
+                                    <option value="MODERATE">🟡 Moderate</option>
+                                    <option value="LOW">🟢 Low</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="alertDateFrom">From Date</label>
+                                <input type="date" id="alertDateFrom" onchange="filterAlerts()">
+                            </div>
+                            <div class="filter-group">
+                                <label for="alertDateTo">To Date</label>
+                                <input type="date" id="alertDateTo" onchange="filterAlerts()">
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <button class="btn-reset-filters" onclick="resetAlertFilters()">↻ Reset Filters</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: white; border-radius: 12px; margin-bottom: 16px; border: 1px solid #dee2e6;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 13px; color: #666; font-weight: 500;">Records per page:</span>
+                        <select id="alertPageSize" onchange="changeAlertPageSize()" style="padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 6px; font-size: 13px; cursor: pointer; background: white;">
+                            <option value="10" selected>10 per page</option>
+                            <option value="25">25 per page</option>
+                            <option value="50">50 per page</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span id="alertPageInfo" style="font-size: 13px; color: #666;">Page 1</span>
+                        <button class="pagination-btn" id="alertPrevBtn" onclick="alertPreviousPage()" style="padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; background: white; cursor: pointer; font-size: 13px; transition: all 0.2s;">← Previous</button>
+                        <div id="alertPageNumbers" style="display: flex; gap: 4px;"></div>
+                        <button class="pagination-btn" id="alertNextBtn" onclick="alertNextPage()" style="padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; background: white; cursor: pointer; font-size: 13px; transition: all 0.2s;">Next →</button>
+                    </div>
+                </div>
+
+                <!-- Alerts List -->
+                <div class="alerts-container" id="alerts-container">
+                    <div style="text-align: center; padding: 60px 32px; color: #95a5a6;">
+                        <p>Loading alerts...</p>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="app-footer" aria-label="Application Footer">
+                <div class="app-footer-main">
+                    <div class="app-footer-col">
+                        <div class="app-footer-title">Contact Us</div>
+                        <div class="app-footer-support">
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.61a2 2 0 0 1-.45 2.11L8.03 9.91a16 16 0 0 0 6.06 6.06l1.47-1.25a2 2 0 0 1 2.11-.45c.84.29 1.71.5 2.61.62A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>+60 17-4151690</span>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+                                <a href="mailto:johannesric03@gmail.com">johannesric03@gmail.com</a>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row app-footer-address">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <address>University of Malaysia Sarawak, Jln Datuk Mohammad Musa, 94300 Kota Samarahan, Sarawak, Malaysia</address>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-footer-bottom">
+                    <div class="app-footer-copy">
+                    For clinical support purposes only. Final diagnosis and treatment decisions remain the responsibility of licensed medical professionals.
+                    </div>
+                    <div class="app-footer-meta">
+                        <div>Version 1.0.0 | Last updated: <span class="last-updated-date"></span></div>
+                        <div>&copy; 2026 Johannes Eric Ramesh. All Rights Reserved.</div>
+                    </div>
+                </div>
+            </footer>
+
+            <script>
+                (function() {
+                    const lastUpdated = document.querySelector('.last-updated-date');
+                    if (lastUpdated) {
+                        lastUpdated.textContent = new Date().toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    }
+                })();
+            </script>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/mobile-nav.js') }}"></script>
+    <script>
+        window.initMobileNav?.({
+            breakpoint: 900,
+            bodyClass: 'mobile-nav-enabled',
+            openClass: 'nav-open',
+            toggleSelector: '#mobileNavToggle',
+            overlaySelector: '#mobileNavOverlay',
+            sidebarSelector: '#sidebarNav',
+            navLinksSelector: '#sidebarNav .nav-links a'
+        });
+
+        let allAlerts = [];
+        let currentTab = 'pending';
+        let filteredAlerts = [];
+        let alertCurrentPage = 1;
+        let alertPageSize = 10;
+
+        // Format date with user's local timezone
+        function formatLocalDateTime(isoString) {
+            const date = new Date(isoString);
+            const options = {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            return date.toLocaleString(undefined, options);
+        }
+
+        // Load alerts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // If ?highlight= is present, ensure we show the right tab after loading
+            const highlightId = new URLSearchParams(window.location.search).get('highlight');
+            if (highlightId) {
+                // loadAlerts → displayAlerts → populateAlerts will handle highlight after data loads
+                window._highlightMedicalId = highlightId;
+            }
+            loadAlerts();
+            loadUserInfo();
+            setupTabListeners();
+        });
+
+        // ========== ALERT FILTERING FUNCTIONS ==========
+        function toggleAlertFilterPanel(headerElement) {
+            const content = headerElement.nextElementSibling;
+            const btn = headerElement.querySelector('.filter-toggle-btn');
+            content.classList.toggle('collapsed');
+            btn.classList.toggle('collapsed');
+        }
+
+        function filterAlerts() {
+            const patientSearch = document.getElementById('alertPatientSearch').value.toLowerCase();
+            const urgencyFilter = document.getElementById('alertUrgencyFilter').value;
+            const dateFrom = document.getElementById('alertDateFrom').value;
+            const dateTo = document.getElementById('alertDateTo').value;
+
+            // Start with all alerts
+            let filtered = allAlerts.filter(alert => {
+                // Patient search - check both name and medical ID
+                if (patientSearch) {
+                    const patientNameMatch = (alert.patient_name || '').toLowerCase().includes(patientSearch);
+                    const patientIdMatch = String(alert.patient_medical_id || '').includes(patientSearch);
+                    if (!patientNameMatch && !patientIdMatch) return false;
+                }
+
+                // Urgency filter
+                if (urgencyFilter && alert.urgency_level !== urgencyFilter) {
+                    return false;
+                }
+
+                // Date range filter
+                if (dateFrom || dateTo) {
+                    const alertDate = new Date(alert.created_at).toISOString().split('T')[0];
+                    if (dateFrom && alertDate < dateFrom) return false;
+                    if (dateTo && alertDate > dateTo) return false;
+                }
+
+                return true;
+            });
+
+            // Now filter by current tab (pending/acknowledged)
+            filteredAlerts = filtered.filter(alert => {
+                if (currentTab === 'pending') {
+                    return !alert.is_acknowledged;
+                } else if (currentTab === 'acknowledged') {
+                    return alert.is_acknowledged;
+                }
+                return true;
+            });
+
+            populateAlerts(filteredAlerts);
+        }
+
+        function resetAlertFilters() {
+            document.getElementById('alertPatientSearch').value = '';
+            document.getElementById('alertUrgencyFilter').value = '';
+            document.getElementById('alertDateFrom').value = '';
+            document.getElementById('alertDateTo').value = '';
+
+            displayAlerts();
+        }
+
+        function setupTabListeners() {
+            document.getElementById('tab-pending').addEventListener('click', function() {
+                currentTab = 'pending';
+                alertCurrentPage = 1;
+                updateTabUI();
+                displayAlerts();
+            });
+
+            document.getElementById('tab-acknowledged').addEventListener('click', function() {
+                currentTab = 'acknowledged';
+                alertCurrentPage = 1;
+                updateTabUI();
+                displayAlerts();
+            });
+        }
+
+        function updateTabUI() {
+            const tabPending = document.getElementById('tab-pending');
+            const tabAcknowledged = document.getElementById('tab-acknowledged');
+
+            if (currentTab === 'pending') {
+                tabPending.classList.add('active');
+                tabAcknowledged.classList.remove('active');
+            } else {
+                tabPending.classList.remove('active');
+                tabAcknowledged.classList.add('active');
+            }
+        }
+
+        async function loadAlerts() {
+            try {
+                // Fetch real alerts from notification system
+                const response = await fetch('/api/alerts?filter=all');
+                const data = await response.json();
+
+                if (data.success) {
+                    updateMetrics(data);
+                    displayAlerts();  // Display filtered based on current tab
+                } else {
+                    showNoAlerts();
+                }
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                showNoAlerts();
+            }
+        }
+
+        function updateMetrics(data) {
+            // Update metrics from real alerts
+            document.getElementById('critical-count').textContent = data.critical_count || 0;
+            document.getElementById('moderate-count').textContent = data.high_count || 0;
+            document.getElementById('pending-count').textContent = data.pending_count || 0;
+            document.getElementById('acknowledged-count').textContent = data.acknowledged_count || 0;
+            document.getElementById('pending-badge').textContent = data.pending_count || 0;
+            document.getElementById('acknowledged-badge').textContent = data.acknowledged_count || 0;
+
+            // Store all alerts for tab switching
+            allAlerts = data.alerts || [];
+
+            // If navigated here with ?highlight=, switch to the correct tab
+            if (window._highlightMedicalId) {
+                const target = allAlerts.find(a => String(a.patient_medical_id) === String(window._highlightMedicalId));
+                if (target && target.is_acknowledged) {
+                    currentTab = 'acknowledged';
+                } else {
+                    currentTab = 'pending';
+                }
+            }
+        }
+
+        function displayAlerts() {
+            // Check if filters are active - if so, just update from filtered list
+            const patientSearch = document.getElementById('alertPatientSearch')?.value.toLowerCase() || '';
+            const urgencyFilter = document.getElementById('alertUrgencyFilter')?.value || '';
+            const dateFrom = document.getElementById('alertDateFrom')?.value || '';
+            const dateTo = document.getElementById('alertDateTo')?.value || '';
+
+            // If any filter is active, use filterAlerts instead
+            if (patientSearch || urgencyFilter || dateFrom || dateTo) {
+                filterAlerts();
+                return;
+            }
+
+            // Filter alerts based on current tab
+            const filtered = allAlerts.filter(alert => {
+                if (currentTab === 'pending') {
+                    return !alert.is_acknowledged;
+                } else if (currentTab === 'acknowledged') {
+                    return alert.is_acknowledged;
+                }
+                return true;
+            });
+
+            filteredAlerts = filtered;
+            populateAlerts(filtered);
+        }
+
+        function populateAlerts(alerts) {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+
+            alertCurrentPage = 1;
+
+            if (alerts.length === 0) {
+                if (currentTab === 'pending') {
+                    container.innerHTML = '<div class="no-alerts" style="text-align: center; padding: 60px 32px; color: #95a5a6;"><p>✓ No pending alerts</p><p style="font-size: 13px; color: #c0c0c0;">All cases have been reviewed</p></div>';
+                } else {
+                    container.innerHTML = '<div class="no-alerts" style="text-align: center; padding: 60px 32px; color: #95a5a6;"><p>No acknowledged alerts yet</p><p style="font-size: 13px; color: #c0c0c0;">Acknowledge pending alerts to see them here</p></div>';
+                }
+                updateAlertPaginationControls();
+                return;
+            }
+
+            const totalPages = Math.ceil(alerts.length / alertPageSize);
+            const start = (alertCurrentPage - 1) * alertPageSize;
+            const end = start + alertPageSize;
+            const pageAlerts = alerts.slice(start, end);
+
+            pageAlerts.forEach(alert => {
+                // Map urgency level to severity class
+                const severityMap = {
+                    'CRITICAL': 'critical',
+                    'HIGH': 'moderate',
+                    'MODERATE': 'moderate',
+                    'LOW': 'low'
+                };
+                const severityClass = severityMap[alert.urgency_level] || 'moderate';
+                const urgencyColor = {
+                    'CRITICAL': '#dc3545',
+                    'HIGH': '#ff9800',
+                    'MODERATE': '#ffb74d',
+                    'LOW': '#4caf50'
+                }[alert.urgency_level] || '#ff9800';
+
+                const alertCard = document.createElement('div');
+                alertCard.className = `alert-card ${severityClass}`;
+                alertCard.dataset.medicalId = alert.patient_medical_id || '';
+                
+                let acknowledgedInfo = '';
+                if (alert.is_acknowledged) {
+                    const ackTime = formatLocalDateTime(alert.acknowledged_at);
+                    acknowledgedInfo = `<div class="alert-info-row" style="color: #4caf50;"><span class="alert-info-label">Acknowledged:</span><span class="alert-info-value">${ackTime}</span></div>`;
+                }
+                
+                alertCard.innerHTML = `
+                    <div class="alert-header">
+                        <span class="alert-badge ${severityClass}" style="background-color: ${urgencyColor};">${alert.urgency_level}</span>
+                        <div class="alert-title">Patient ${alert.patient_name} <span style="font-size: 12px; color: #95a5a6; margin-left: 8px;">(ID: ${alert.patient_medical_id || 'N/A'})</span></div>
+                    </div>
+
+                    <div class="alert-content">
+                        <div class="alert-info">
+                            <div class="alert-info-row">
+                                <span class="alert-info-label">From:</span>
+                                <span class="alert-info-value">${alert.sender_name}</span>
+                            </div>
+                            <div class="alert-info-row">
+                                <span class="alert-info-label">Received:</span>
+                                <span class="alert-info-value">${formatLocalDateTime(alert.created_at)}</span>
+                            </div>
+                            ${acknowledgedInfo}
+                            <div class="alert-action-required" style="background-color: ${urgencyColor}; color: white;">PRIORITY: ${alert.urgency_level}</div>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                            <strong>Alert:</strong>
+                            <p style="margin: 8px 0; color: #555; font-size: 14px;">${alert.message}</p>
+                        </div>
+                    </div>
+
+                    <div class="alert-actions">
+                        ${alert.is_acknowledged ? `<span style="color: #4caf50; font-weight: 600;">✓ Acknowledged</span>` : `<button class="alert-btn notify" onclick="acknowledgeAlert(${alert.id})">
+                            ACKNOWLEDGE
+                        </button>`}
+                        <button class="alert-btn view" onclick="viewAlert(${alert.id})">
+                            VIEW CASE & DETAILS
+                        </button>
+                    </div>
+                `;
+                container.appendChild(alertCard);
+            });
+
+            updateAlertPaginationControls();
+
+            // Highlight a specific alert if ?highlight=MEDICAL_ID is in the URL
+            const highlightId = window._highlightMedicalId || new URLSearchParams(window.location.search).get('highlight');
+            if (highlightId) {
+                const target = container.querySelector(`[data-medical-id="${CSS.escape(highlightId)}"]`);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    target.style.outline = '2px solid #667eea';
+                    target.style.boxShadow = '0 0 0 4px rgba(102,126,234,.2)';
+                    setTimeout(() => {
+                        target.style.outline = '';
+                        target.style.boxShadow = '';
+                    }, 3000);
+                }
+            }
+        }
+
+        function updateAlertPaginationControls() {
+            const totalPages = Math.ceil(filteredAlerts.length / alertPageSize);
+            const start = (alertCurrentPage - 1) * alertPageSize + 1;
+            const end = Math.min(alertCurrentPage * alertPageSize, filteredAlerts.length);
+
+            document.getElementById('alertPageInfo').textContent = `Showing ${start}-${end} of ${filteredAlerts.length} alerts`;
+            document.getElementById('alertPrevBtn').disabled = alertCurrentPage === 1;
+            document.getElementById('alertNextBtn').disabled = alertCurrentPage === totalPages || totalPages === 0;
+
+            const pageNumbers = document.getElementById('alertPageNumbers');
+            pageNumbers.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= alertCurrentPage - 1 && i <= alertCurrentPage + 1)) {
+                    const btn = document.createElement('button');
+                    btn.className = `page-number ${i === alertCurrentPage ? 'active' : ''}`;
+                    btn.textContent = i;
+                    btn.style.padding = '6px 10px';
+                    btn.style.border = i === alertCurrentPage ? '2px solid #667eea' : '1px solid #dee2e6';
+                    btn.style.borderRadius = '4px';
+                    btn.style.background = i === alertCurrentPage ? '#f0f2ff' : 'white';
+                    btn.style.color = i === alertCurrentPage ? '#667eea' : '#666';
+                    btn.style.fontSize = '13px';
+                    btn.style.cursor = 'pointer';
+                    btn.onclick = () => alertGoToPage(i);
+                    pageNumbers.appendChild(btn);
+                } else if (i === 2 || i === totalPages - 1) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    span.style.padding = '6px 4px';
+                    span.style.color = '#ccc';
+                    pageNumbers.appendChild(span);
+                }
+            }
+        }
+
+        function changeAlertPageSize() {
+            alertPageSize = parseInt(document.getElementById('alertPageSize').value);
+            alertCurrentPage = 1;
+            displayAlerts();
+        }
+
+        function alertPreviousPage() {
+            if (alertCurrentPage > 1) {
+                alertCurrentPage--;
+                displayAlerts();
+            }
+        }
+
+        function alertNextPage() {
+            const totalPages = Math.ceil(filteredAlerts.length / alertPageSize);
+            if (alertCurrentPage < totalPages) {
+                alertCurrentPage++;
+                displayAlerts();
+            }
+        }
+
+        function alertGoToPage(page) {
+            alertCurrentPage = page;
+            displayAlerts();
+        }
+
+        async function acknowledgeAlert(alertId) {
+            try {
+                const response = await fetch(`/api/notifications/${alertId}/acknowledge`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('✓ Alert acknowledged - Case moved to history');
+                    loadAlerts(); // Reload to update UI
+                } else {
+                    alert('Error acknowledging alert');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error acknowledging alert');
+            }
+        }
+
+        async function viewAlert(alertId) {
+            // Fetch full case details from backend (only for this recipient doctor)
+            try {
+                const response = await fetch(`/api/alert-case/${alertId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store the full analysis data in sessionStorage for results.html
+                    sessionStorage.setItem('analysis_result', JSON.stringify(data.analysis));
+                    
+                    // Mark alert as read
+                    await fetch(`/api/notifications/${alertId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    // Navigate to results page
+                    window.location.href = '/results.html';
+                } else {
+                    alert('Error loading case details: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load case details. Please try again.');
+            }
+        }
+
+        function showNoAlerts() {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = `
+                <div class="no-alerts">
+                    <p>✓ No alerts at this time</p>
+                    <p style="font-size: 13px; color: #c0c0c0;">All patient cases are stable</p>
+                </div>
+            `;
+        }
+
+        // Load current user information
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    const user = result.user;
+                    
+                    // Update user avatar (initials)
+                    const names = user.name.split(' ');
+                    const initials = names.map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('userAvatarInitials').textContent = initials;
+                    
+                    // Update user details
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('userEmail').textContent = user.email;
+                    const userRoleElement = document.getElementById('userRole'); userRoleElement.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1); userRoleElement.className = `user-role role-${user.role}`;
+                    
+
+                } else {
+                    // Not logged in, redirect to login
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        // Clear all patient data from sessionStorage for security/privacy
+                        sessionStorage.removeItem('patient_name');
+                        sessionStorage.removeItem('patient_age');
+                        sessionStorage.removeItem('patient_medical_id');
+                        sessionStorage.removeItem('analysis_result');
+                        sessionStorage.removeItem('currentAnalysisId');
+                        
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error logging out. Please try again.');
+                }
+            }
+        });
+
+        // Load user info on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+        });
+
+        // ========== THEME TOGGLE ==========
+        (function() {
+            const html = document.documentElement;
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+            
+            // Load saved theme or default to light
+            function loadTheme() {
+                const saved = localStorage.getItem('theme_preference') || 'light';
+                applyTheme(saved);
+            }
+            
+            function applyTheme(theme) {
+                body.setAttribute('data-theme', theme);
+                localStorage.setItem('theme_preference', theme);
+                updateToggleButton(theme);
+                // Update tab colors when theme changes
+                if (typeof updateTabUI === 'function') {
+                    updateTabUI();
+                }
+            }
+            
+            function updateToggleButton(theme) {
+                if (themeToggle) {
+                    const moonIcon = themeToggle.querySelector('.icon-moon');
+                    const sunIcon = themeToggle.querySelector('.icon-sun');
+                    if (theme === 'dark') {
+                        if (moonIcon) moonIcon.style.display = 'none';
+                        if (sunIcon) sunIcon.style.display = 'block';
+                        themeToggle.classList.add('dark-mode');
+                        themeToggle.classList.remove('light-mode');
+                    } else {
+                        if (moonIcon) moonIcon.style.display = 'block';
+                        if (sunIcon) sunIcon.style.display = 'none';
+                        themeToggle.classList.add('light-mode');
+                        themeToggle.classList.remove('dark-mode');
+                    }
+                }
+            }
+            
+            // Toggle theme on button click
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const current = body.getAttribute('data-theme') || 'light';
+                    const newTheme = current === 'light' ? 'dark' : 'light';
+                    applyTheme(newTheme);
+                });
+            }
+            
+            // Load theme on page load
+            loadTheme();
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Analysis Result - PneumoDetect</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <style>
+        /* Page-specific helpers for Results layout */
+        .results-grid { display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start; width:100% }
+        .xray-card { display:flex; flex-direction:column; gap:16px; height:fit-content }
+        .xray-frame { background:#fff; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.04); width:100%; min-width:0 }
+        .xray-frame img { max-width:100%; width:100%; height:auto; object-fit:contain; display:block }
+        .gradcam-frame-title { margin:0 0 8px; font-size:15px; font-weight:700; color:#2c3e50; }
+        .gradcam-caption { margin-top:8px; font-size:12px; color:#6b7280; }
+        .gradcam-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+        .gradcam-header .gradcam-frame-title { margin:0; }
+        .gradcam-toggle-btn { display:none; align-items:center; justify-content:center; padding:8px 12px; border:1px solid #d0d7e0; border-radius:8px; background:#f8f9fa; color:#2c3e50; font-size:12px; font-weight:600; cursor:pointer; }
+        .gradcam-toggle-btn:hover { border-color:#667eea; color:#667eea; }
+        .xray-canvas-wrap { position: relative; width: 100%; display: inline-block; line-height: 0; }
+        .xray-overlay { position: absolute; inset: 0; cursor: crosshair; }
+        .xray-overlay.draw-off { cursor: default; }
+        .xray-box { position: absolute; border: 2px solid #dc3545; background: rgba(220, 53, 69, 0.15); box-sizing: border-box; }
+        .xray-box-label { position: absolute; top: -18px; left: 0; background: #dc3545; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; line-height: 1.2; }
+        .xray-box-preview { position: absolute; border: 2px dashed #ff9800; background: rgba(255, 152, 0, 0.15); box-sizing: border-box; pointer-events: none; }
+        .xray-annotate-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .xray-tool-btn { padding: 8px 12px; border: 1px solid #d0d7e0; border-radius: 8px; background: #f8f9fa; color: #2c3e50; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .xray-tool-btn:hover { border-color: #667eea; color: #667eea; }
+        .xray-tool-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+        .xray-annotate-hint { font-size: 12px; color: #6b7280; }
+        .ai-card { display:flex; flex-direction:column; gap:12px; height:fit-content }
+        .ai-card .section { background:#fff; border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04) }
+        .ai-status { font-size:18px; font-weight:700; color:var(--danger) }
+        .meta-small { font-size:13px; color:var(--text-light) }
+        .annotations textarea { width:100%; min-height:120px; padding:12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa }
+        .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #007bff; color: #007bff; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 6px; transition: all 0.3s; }
+        .info-icon:hover { background: #007bff; color: white; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background-color: #fff; padding: 24px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto; }
+        .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #2c3e50; }
+        .modal-body { font-size: 14px; color: #555; line-height: 1.6; }
+        .modal-body strong { color: #2c3e50; }
+        .modal-body .score-item { margin: 12px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #007bff; }
+        .modal-body .risk-low { border-left-color: #28a745; }
+        .modal-body .risk-moderate { border-left-color: #ff9800; }
+        .modal-body .risk-high { border-left-color: #dc3545; }
+        .modal-close { float: right; font-size: 28px; font-weight: bold; color: #999; cursor: pointer; line-height: 1; }
+        .modal-close:hover { color: #000; }
+        /* Dark mode for info modals (confidence + CURB-65) */
+        body[data-theme="dark"] #confidenceModal .modal-content, body[data-theme="dark"] #curbModal .modal-content { background: #1f2433; border: 1px solid #3b4358; color: #d9e0ef; }
+        body[data-theme="dark"] #confidenceModal .modal-header, body[data-theme="dark"] #curbModal .modal-header { color: #eef3ff; background: transparent; }
+        body[data-theme="dark"] #confidenceModal .modal-body, body[data-theme="dark"] #curbModal .modal-body { color: #c3ccde; }
+        body[data-theme="dark"] #confidenceModal .modal-body strong, body[data-theme="dark"] #curbModal .modal-body strong { color: #f4f7ff; }
+        body[data-theme="dark"] #confidenceModal .modal-body .score-item, body[data-theme="dark"] #curbModal .modal-body .score-item { background: #2a3144; color: #d6deec; }
+        body[data-theme="dark"] #confidenceModal .modal-close, body[data-theme="dark"] #curbModal .modal-close { color: #aab5cb; }
+        body[data-theme="dark"] #confidenceModal .modal-close:hover, body[data-theme="dark"] #curbModal .modal-close:hover { color: #ffffff; }
+        body[data-theme="dark"] #confidenceModal .modal-body p[style], body[data-theme="dark"] #curbModal .modal-body p[style] { background: #2a3144 !important; color: #cfd8ea !important; border-left-color: #667eea !important; }
+        /* Send Alert Modal - Modern Futuristic Style */
+        #alertDoctorModal .modal-content { max-width: 600px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 1px solid #e9ecef; }
+        #alertDoctorModal .modal-header { background: linear-gradient(135deg, #667eea 0%, #5568d3 100%); color: #fff; padding: 20px 24px; margin: -24px -24px 20px -24px; border-radius: 12px 12px 0 0; font-size: 20px; display: flex; align-items: center; gap: 12px; }
+        #alertDoctorModal .modal-header svg { width: 24px; height: 24px; }
+        #alertDoctorModal .doctor-list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; max-height: 300px; overflow-y: auto; }
+        #alertDoctorModal .doctor-item { padding: 14px 16px; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; display: flex; align-items: center; gap: 12px; background: #fff; }
+        #alertDoctorModal .doctor-item:hover { border-color: #667eea; background: #f8f9ff; }
+        #alertDoctorModal .doctor-item.selected { border-color: #667eea; background: linear-gradient(135deg, #f0f3ff 0%, #f8f9ff 100%); }
+        #alertDoctorModal .doctor-item input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #667eea; }
+        #alertDoctorModal .doctor-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        #alertDoctorModal .doctor-name { font-weight: 600; color: #2c3e50; font-size: 14px; }
+        #alertDoctorModal .doctor-role { font-size: 12px; color: #95a5a6; }
+        #alertDoctorModal .modal-footer { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #e9ecef; }
+        #alertDoctorModal .btn-cancel { padding: 10px 20px; border: 1.5px solid #667eea; border-radius: 8px; background: transparent; color: #667eea; font-weight: 600; cursor: pointer; transition: all 0.25s ease; }
+        #alertDoctorModal .btn-cancel:hover { background: #667eea; color: #fff; }
+        #alertDoctorModal .btn-send { padding: 10px 24px; border: none; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #5568d3 100%); color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        #alertDoctorModal .btn-send:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
+        #alertDoctorModal .btn-send:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        /* Dark mode for send alert modal */
+        body[data-theme="dark"] #alertDoctorModal .modal-content { background: linear-gradient(135deg, #2a2e3e 0%, #3a3e50 100%); border-color: #444; }
+        body[data-theme="dark"] #alertDoctorModal .doctor-item { border-color: #444; background: #3a3e50; }
+        body[data-theme="dark"] #alertDoctorModal .doctor-item:hover { border-color: #667eea; background: #424d64; }
+        body[data-theme="dark"] #alertDoctorModal .doctor-item.selected { border-color: #667eea; background: linear-gradient(135deg, #424d64 0%, #3a3e50 100%); }
+        body[data-theme="dark"] #alertDoctorModal .doctor-name { color: #e0e5f0; }
+        body[data-theme="dark"] #alertDoctorModal .doctor-role { color: #b8c5d6; }
+        body[data-theme="dark"] #alertDoctorModal .modal-footer { border-top-color: #444; }
+        body[data-theme="dark"] #alertDoctorModal .btn-cancel { border-color: #8b9fef; color: #a8baef; }
+        body[data-theme="dark"] #alertDoctorModal .btn-cancel:hover { background: #667eea; color: #fff; }
+        /* Send Alert Button */
+        .send-alert-btn { display: none; padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4); align-items: center; gap: 6px; }
+        .send-alert-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6); color: white; }
+        .send-alert-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        /* Dark mode: keep button text white */
+        body[data-theme="dark"] .send-alert-btn { color: white; }
+        body[data-theme="dark"] .send-alert-btn:hover:not(:disabled) { color: white; }
+        /* ========== OPTION 3: MONOCHROMATIC BUTTON DESIGN ========== */
+        /* All buttons use neutral blue (#667eea) except alert which is red (#dc3545) */
+        .btn-modern { padding: 10px 20px; border: none; border-radius: 8px; color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-modern:hover { transform: translateY(-2px); filter: brightness(0.95); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .btn-modern:active { transform: translateY(0); }
+        /* Primary button - Neutral blue for most actions */
+        .btn-modern.primary { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); }
+        .btn-modern.primary:hover { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); }
+        /* Alert button - Red only for critical actions */
+        .btn-modern.alert { background: #dc3545; }
+        .btn-modern.alert:hover { background: #c82333; }
+        /* Dark mode adjustments */
+        body[data-theme="dark"] .btn-modern { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
+        body[data-theme="dark"] .btn-modern:hover { transform: translateY(-2px); filter: brightness(0.95); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); color: white; }
+        body[data-theme="dark"] .xray-tool-btn { background: #2a2e3e; border-color: #444; color: #e0e5f0; }
+        body[data-theme="dark"] .xray-tool-btn:hover { border-color: #667eea; color: #a8baef; }
+        body[data-theme="dark"] .xray-tool-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+        body[data-theme="dark"] .xray-annotate-hint { color: #b8c5d6; }
+        body[data-theme="dark"] .gradcam-frame-title { color: #e5ebff; }
+        body[data-theme="dark"] .gradcam-caption { color: #b8c5d6; }
+        body[data-theme="dark"] .gradcam-toggle-btn { background:#2a2e3e; border-color:#444; color:#e0e5f0; }
+        body[data-theme="dark"] .gradcam-toggle-btn:hover { border-color:#667eea; color:#a8baef; }
+        /* Footer Navigation Buttons */
+        .footer-nav-back { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border:1px solid #d0d7e0; border-radius:8px; background:#f8f9fa; color:#2c3e50; font-weight:600; font-size:13px; text-decoration:none; transition:all 0.3s ease; cursor:pointer; }
+        .footer-nav-back:hover { background:#e9ecef; border-color:#667eea; color:#667eea; transform:translateX(-2px); box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+        .footer-nav-next { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; background:linear-gradient(135deg, #3498db 0%, #2980b9 100%); border-radius:8px; color:#fff; font-weight:600; font-size:13px; text-decoration:none; transition:all 0.3s ease; cursor:pointer; }
+        .footer-nav-next:hover { transform:translateX(2px); filter:brightness(0.95); box-shadow:0 4px 12px rgba(52, 152, 219, 0.3); color:white; }
+        body[data-theme="dark"] .footer-nav-back { background:#2a2e3e; border-color:#444; color:#e0e5f0; }
+        body[data-theme="dark"] .footer-nav-back:hover { background:#3a3e50; border-color:#667eea; color:#fff; }
+        body[data-theme="dark"] .footer-nav-next { color: white; }
+        body[data-theme="dark"] .footer-nav-next:hover { filter:brightness(0.95); color:white; }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width:900px){ .results-grid{ grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body data-theme="light" class="mobile-nav-enabled">
+    <div class="app-container">
+        <aside class="sidebar" id="sidebarNav">
+            <div class="logo">
+                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon icon-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-medium-icon lucide-sun-medium icon-sun" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 3v1"/><path d="M12 20v1"/><path d="M3 12h1"/><path d="M20 12h1"/><path d="m18.364 5.636-.707.707"/><path d="m6.343 17.657-.707.707"/><path d="m5.636 5.636.707.707"/><path d="m17.657 17.657.707.707"/></svg>
+                </button>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Dashboard</a>
+                <a href="{{ url_for('new_analysis') }}" {% if request.endpoint == 'new_analysis' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg></span>New Analysis</a>
+                <a href="{{ url_for('report') }}" {% if request.endpoint == 'report' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>Patient History</a>
+                <a href="{{ url_for('analytics') }}" {% if request.endpoint == 'analytics' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="3" y2="20"/><line x1="21" y1="20" x2="3" y2="20"/><line x1="7" y1="15" x2="7" y2="20"/><line x1="12" y1="10" x2="12" y2="20"/><line x1="17" y1="5" x2="17" y2="20"/></svg></span>Analytics</a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('staff_performance') }}" {% if request.endpoint == 'staff_performance' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Staff Performance</a>
+                {% endif %}
+                {% if current_user.role != 'admin' %}
+                <a href="{{ url_for('alerts') }}" {% if request.endpoint == 'alerts' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>Alerts</a>
+                {% endif %}
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatarInitials">--</div>
+                <div class="user-details">
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userEmail">...</p>
+                    <span id="userRole" class="user-role">--</span>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </aside>
+
+        <button class="mobile-nav-overlay" id="mobileNavOverlay" aria-label="Close menu"></button>
+
+        <main class="main-content">
+            <div class="mobile-nav-bar">
+                <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebarNav">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="mobile-nav-title">PneumoDetect</div>
+            </div>
+
+            <div class="top-header">
+                <h1>New Analysis</h1>
+                <p>Upload and analyze chest X-ray images for pneumonia detection</p>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="stepper" aria-hidden="false">
+                    <div class="step done">
+                        <div class="circle">1</div>
+                        <div class="label">Patient Info</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step done">
+                        <div class="circle">2</div>
+                        <div class="label">Upload X-Ray</div>
+                    </div>
+                    <div class="step-sep"></div>
+                    <div class="step active">
+                        <div class="circle">3</div>
+                        <div class="label">Results</div>
+                    </div>
+                </div>
+
+                <h2 style="margin:0 0 8px">Analysis Result</h2>
+                <div class="meta-small" id="patientMeta" style="margin-bottom:18px">Loading patient data...</div>
+
+                <div class="results-grid">
+                    <div class="xray-card">
+                        <div class="xray-frame">
+                            <div class="xray-canvas-wrap">
+                                <img id="resultXray" src="https://via.placeholder.com/520x520.png?text=Chest+X-Ray" alt="Patient X-ray">
+                                <div id="xrayOverlay" class="xray-overlay draw-off" aria-label="X-ray annotation overlay"></div>
+                            </div>
+                            <div class="xray-annotate-toolbar">
+                                <button type="button" id="toggleDrawModeBtn" class="xray-tool-btn">Draw Box</button>
+                                <button type="button" id="undoBoxBtn" class="xray-tool-btn">Undo Last</button>
+                                <button type="button" id="clearBoxesBtn" class="xray-tool-btn">Clear All</button>
+                                <span class="xray-annotate-hint" id="xrayBoxHint">Tip: Enable Draw Box, then drag on X-ray to mark pneumonia area.</span>
+                            </div>
+                        </div>
+                        <div class="xray-frame" id="gradcamPanel" style="display:none;">
+                            <div class="gradcam-header">
+                                <h4 class="gradcam-frame-title">Grad-CAM Explainability</h4>
+                                <button type="button" id="toggleGradcamVisibilityBtn" class="gradcam-toggle-btn" aria-expanded="true">Hide Heatmap</button>
+                            </div>
+                            <div class="xray-canvas-wrap">
+                                <img id="gradcamImage" src="" alt="Grad-CAM heatmap overlay">
+                                <div id="gradcamOverlay" class="xray-overlay draw-off" aria-label="Grad-CAM annotation overlay"></div>
+                            </div>
+                            <div class="xray-annotate-toolbar">
+                                <button type="button" id="toggleGradcamDrawModeBtn" class="xray-tool-btn">Draw Box</button>
+                                <button type="button" id="undoGradcamBoxBtn" class="xray-tool-btn">Undo Last</button>
+                                <button type="button" id="clearGradcamBoxesBtn" class="xray-tool-btn">Clear All</button>
+                                <span class="xray-annotate-hint" id="gradcamBoxHint">Tip: Mark explainability focus regions on Grad-CAM.</span>
+                            </div>
+                            <div class="gradcam-caption">Note: This heatmap highlights image regions that influenced the model prediction. It is intended for visual interpretability only and should not be interpreted as clinically confirmed pneumonia localization.</div>
+                        </div>
+                    </div>
+
+                    <div class="ai-card">
+                        <div class="section">
+                            <h4 style="margin:0 0 6px">AI DIAGNOSIS</h4>
+                            <div style="height:1px; background:#e9ecef; margin:8px 0 12px"></div>
+                            <div style="display:flex; justify-content:space-between; align-items:center">
+                                <div>
+                                    <div style="font-size:13px; color:#95a5a6">Status:</div>
+                                    <div class="ai-status" style="margin-top:6px" id="diagnosisStatus">LOADING...</div>
+                                    <div style="margin-top:10px; color:#6c757d">Confidence:</div>
+                                    <div style="display:flex; align-items:center; margin-top:6px;">
+                                        <div style="font-weight:700; font-size:18px" id="confidenceScore">--%</div>
+                                        <span class="info-icon" id="confidenceInfoBtn" title="What does this score mean?">i</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h4 style="margin:0 0 6px">SEVERITY (CURB-65)</h4>
+                            <div style="height:1px; background:#e9ecef; margin:8px 0 12px"></div>
+                            <div style="font-size:14px; display:flex; align-items:center;">
+                                Score: <strong id="resultCurb" style="margin-left: 4px;">-</strong>
+                                <span class="info-icon" id="curbInfoBtn" title="What does this CURB-65 score mean?">i</span>
+                            </div>
+                            <div style="margin-top:8px; color:var(--danger); font-weight:700" id="riskLevel">Risk: -</div>
+                            <div style="margin-top:8px; color:#6c757d" id="action">Action: -</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:22px; padding:18px 22px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin:0 0 16px">
+                        <div>
+                            <h4 style="margin:0 0 6px">DOCTOR'S ANNOTATIONS</h4>
+                            <p class="small-hint" style="margin:0">Add clinical notes, diagnosis confirmation, and treatment recommendations</p>
+                        </div>
+                        <a href="#" id="downloadReport" class="btn-modern primary" style="margin-left:auto; white-space:nowrap"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> Download Report</a>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px">
+                        <input id="doctorName" class="form-row" placeholder="Doctor Name" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa">
+                        <input id="finalDiagnosis" class="form-row" placeholder="Final Diagnosis" style="padding:10px 12px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa">
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Clinical Notes</label>
+                        <textarea id="clinicalNotes" placeholder="Enter detailed clinical observations, symptoms, and examination findings..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Treatment Plan</label>
+                        <textarea id="treatmentPlan" placeholder="Prescribed medications, dosages, and treatment duration..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                    </div>
+
+                    <div style="margin-bottom:12px">
+                        <label style="display:block; font-weight:600; margin-bottom:6px">Follow-up Instructions</label>
+                        <textarea id="followUpInstructions" placeholder="Next appointment, monitoring requirements, warning signs to watch for..." style="width:100%; min-height:140px; padding:12px 14px; border-radius:8px; border:1px solid #ececec; background:#f8f9fa; font-family:inherit; font-size:14px; resize:vertical"></textarea>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px">
+                        <a href="new_analysis.html" id="newDiagnosis" class="btn-modern primary" style="margin-right:auto">New Diagnosis</a>
+                        <button id="saveAnnotationsBtn" class="btn-modern primary">Save Annotations</button>
+                        <button id="sendAlertBtn" class="send-alert-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Send Alert to Doctor</button>
+                    </div>
+
+                    <!-- Footer Navigation -->
+                    <div style="height:1px; background:#e9ecef; margin:24px 0"></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:24px; padding-top:16px">
+                        <a href="{{ url_for('dashboard') }}" class="footer-nav-back"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Back to Dashboard</a>
+                        <a href="{{ url_for('report') }}" class="footer-nav-next">View Patient History <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></a>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="app-footer" aria-label="Application Footer">
+                <div class="app-footer-main">
+                    <div class="app-footer-col">
+                        <div class="app-footer-title">Contact Us</div>
+                        <div class="app-footer-support">
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.61a2 2 0 0 1-.45 2.11L8.03 9.91a16 16 0 0 0 6.06 6.06l1.47-1.25a2 2 0 0 1 2.11-.45c.84.29 1.71.5 2.61.62A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>+60 17-4151690</span>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+                                <a href="mailto:johannesric03@gmail.com">johannesric03@gmail.com</a>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row app-footer-address">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <address>University of Malaysia Sarawak, Jln Datuk Mohammad Musa, 94300 Kota Samarahan, Sarawak, Malaysia</address>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-footer-bottom">
+                    <div class="app-footer-copy">
+                    For clinical support purposes only. Final diagnosis and treatment decisions remain the responsibility of licensed medical professionals.
+                    </div>
+                    <div class="app-footer-meta">
+                        <div>Version 1.0.0 | Last updated: <span class="last-updated-date"></span></div>
+                        <div>&copy; 2026 Johannes Eric Ramesh. All Rights Reserved.</div>
+                    </div>
+                </div>
+            </footer>
+
+            <script>
+                (function() {
+                    const lastUpdated = document.querySelector('.last-updated-date');
+                    if (lastUpdated) {
+                        lastUpdated.textContent = new Date().toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    }
+                })();
+            </script>
+        </main>
+    </div>
+
+    <!-- Doctor Alert Selection Modal -->
+    <div id="alertDoctorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+                Select Doctor to Alert
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:12px; color:#666">Choose a doctor to notify about this critical case:</p>
+                <div class="doctor-list" id="doctorListContainer"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="alertModalCancel">Cancel</button>
+                <button class="btn-send" id="alertModalSend" disabled>Send Alert</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confidence Score Modal -->
+    <div id="confidenceModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="confidenceModalClose">&times;</span>
+            <div class="modal-header">AI Confidence Score Interpretation</div>
+            <div class="modal-body">
+                <p>The confidence score represents how clearly the AI model can see and identify pneumonia patterns in the X-ray. A higher score indicates clearer detection of pneumonia features.</p>
+                
+                <div class="score-item risk-low">
+                    <strong>0-40%: Low Confidence</strong><br>
+                    The X-ray findings are borderline or minimal. Result may show normal lung or subtle pneumonia features that are difficult to detect. Recommendation: Requires careful clinical review by physician. Consider repeat imaging or patient follow-up for symptom correlation.
+                </div>
+                
+                <div class="score-item risk-moderate">
+                    <strong>40-70%: Moderate Confidence</strong><br>
+                    The X-ray shows moderate signs of the detected condition. Findings are visible but not conclusive. Recommendation: Clinical correlation required. Review patient symptoms, vital signs, and imaging carefully before final diagnosis. Additional tests may be beneficial.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>70-85%: High Confidence</strong><br>
+                    The X-ray clearly shows pneumonia features. Strong radiological signs are present. Recommendation: High likelihood of pneumonia diagnosis supported by imaging. Proceed with clinical confirmation and treatment planning.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>85-99%: Very High Confidence</strong><br>
+                    The X-ray shows classic pneumonia findings with very clear patterns. Definitive radiological signs are evident. Recommendation: Strong pneumonia diagnosis confirmed by imaging. Immediate clinical assessment and treatment initiation recommended.
+                </div>
+                
+                <p style="margin-top: 12px; color: #666; font-size: 13px; background: #f0f0f0; padding: 10px; border-radius: 6px;">
+                    <strong>Note:</strong> AI score is an assistive diagnostic tool. Final clinical diagnosis must be made by qualified medical professionals considering patient history, symptoms, clinical examination, and all available diagnostic information.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CURB-65 Score Modal -->
+    <div id="curbModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="curbModalClose">&times;</span>
+            <div class="modal-header">CURB-65 Severity Score</div>
+            <div class="modal-body">
+                <p><strong>CURB-65</strong> is a validated clinical tool (Lim et al. 2003 Thorax) to assess pneumonia severity and mortality risk. Points are awarded for:</p>
+                <ul style="margin: 10px 0 10px 20px;">
+                    <li><strong>C</strong>onfusion (new onset mental status changes: AMTS ≤8)</li>
+                    <li><strong>U</strong>rea >7 mmol/L (elevated blood urea nitrogen)</li>
+                    <li><strong>R</strong>espiratory rate ≥30 breaths/minute</li>
+                    <li><strong>B</strong>lood pressure (SBP <90 or DBP ≤60 mmHg)</li>
+                    <li><strong>65</strong> = Age ≥65 years</li>
+                </ul>
+                
+                <div class="score-item risk-low">
+                    <strong>Score 0: Very Low Risk</strong><br>
+                    30-day mortality: 0.7%<br>
+                    Recommendation: Outpatient treatment. Safe to manage at home with close clinical follow-up.
+                </div>
+                
+                <div class="score-item risk-low">
+                    <strong>Score 1: Low Risk</strong><br>
+                    30-day mortality: 3.2%<br>
+                    Recommendation: Outpatient treatment likely appropriate. Close follow-up and clinical correlation essential.
+                </div>
+                
+                <div class="score-item risk-moderate">
+                    <strong>Score 2: Moderate Risk</strong><br>
+                    30-day mortality: 13%<br>
+                    Recommendation: Consider hospitalization or close outpatient supervision. IV antibiotics may be required. Close monitoring recommended.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>Score 3: High Risk</strong><br>
+                    30-day mortality: 17%<br>
+                    Recommendation: Hospitalization strongly recommended. Close monitoring and intensive care consideration required.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>Score 4: Very High Risk</strong><br>
+                    30-day mortality: 41.5%<br>
+                    Recommendation: Hospitalization essential. ICU admission should be strongly considered for intensive management.
+                </div>
+                
+                <div class="score-item risk-high">
+                    <strong>Score 5: Critical Risk</strong><br>
+                    30-day mortality: 57%<br>
+                    Recommendation: ICU admission recommended. Requires intensive management and organ support. Consider consultation with critical care team.
+                </div>
+                
+                <p style="margin-top: 12px; color: #666; font-size: 12px; background: #f5f5f5; padding: 10px; border-radius: 6px; border-left: 3px solid #003DA5;">
+                    <strong>Clinical Note:</strong> Evidence-based mortality rates from the original CURB-65 validation study (Lim WS et al. 2003). This score must be used alongside comprehensive clinical judgment. Individual patient factors, comorbidities, and treatment response may affect actual outcomes. Final clinical decisions should be made by qualified healthcare professionals.
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="{{ url_for('static', filename='js/mobile-nav.js') }}"></script>
+    <script>
+        window.initMobileNav?.({
+            breakpoint: 900,
+            bodyClass: 'mobile-nav-enabled',
+            openClass: 'nav-open',
+            toggleSelector: '#mobileNavToggle',
+            overlaySelector: '#mobileNavOverlay',
+            sidebarSelector: '#sidebarNav',
+            navLinksSelector: '#sidebarNav .nav-links a'
+        });
+
+        // Global variable to store analysis_id
+        let currentAnalysisId = null;
+        let currentUserNameCache = 'Medical Staff';
+        let xrayBoxAnnotations = [];
+        let xrayDrawMode = false;
+        let xrayIsDrawing = false;
+        let xrayDrawStart = null;
+        let xrayPreviewBox = null;
+        let gradcamBoxAnnotations = [];
+        let gradcamDrawMode = false;
+        let gradcamIsDrawing = false;
+        let gradcamDrawStart = null;
+        let gradcamPreviewBox = null;
+        let gradcamImageVisible = true;
+
+        // Modal management
+        const confidenceModal = document.getElementById('confidenceModal');
+        const curbModal = document.getElementById('curbModal');
+        const confidenceInfoBtn = document.getElementById('confidenceInfoBtn');
+        const curbInfoBtn = document.getElementById('curbInfoBtn');
+        const confidenceModalClose = document.getElementById('confidenceModalClose');
+        const curbModalClose = document.getElementById('curbModalClose');
+        const gradcamModal = document.getElementById('gradcamModal');
+        const gradcamModalClose = document.getElementById('gradcamModalClose');
+        const gradcamBtn = document.getElementById('gradcamBtn');
+        const gradcamPanel = document.getElementById('gradcamPanel');
+        const gradcamImage = document.getElementById('gradcamImage');
+        const gradcamOverlay = document.getElementById('gradcamOverlay');
+        const resultXrayImg = document.getElementById('resultXray');
+        const xrayOverlay = document.getElementById('xrayOverlay');
+        const toggleDrawModeBtn = document.getElementById('toggleDrawModeBtn');
+        const undoBoxBtn = document.getElementById('undoBoxBtn');
+        const clearBoxesBtn = document.getElementById('clearBoxesBtn');
+        const xrayBoxHint = document.getElementById('xrayBoxHint');
+        const toggleGradcamDrawModeBtn = document.getElementById('toggleGradcamDrawModeBtn');
+        const undoGradcamBoxBtn = document.getElementById('undoGradcamBoxBtn');
+        const clearGradcamBoxesBtn = document.getElementById('clearGradcamBoxesBtn');
+        const gradcamBoxHint = document.getElementById('gradcamBoxHint');
+        const toggleGradcamVisibilityBtn = document.getElementById('toggleGradcamVisibilityBtn');
+
+        function setGradcamVisibility(visible) {
+            gradcamImageVisible = visible;
+
+            const gradcamCanvasWrap = gradcamImage?.closest('.xray-canvas-wrap');
+            const gradcamToolbar = gradcamPanel?.querySelector('.xray-annotate-toolbar');
+            const gradcamCaption = gradcamPanel?.querySelector('.gradcam-caption');
+
+            if (gradcamCanvasWrap) {
+                gradcamCanvasWrap.style.display = visible ? 'inline-block' : 'none';
+            }
+            if (gradcamToolbar) {
+                gradcamToolbar.style.display = visible ? 'flex' : 'none';
+            }
+            if (gradcamCaption) {
+                gradcamCaption.style.display = visible ? 'block' : 'none';
+            }
+            if (toggleGradcamVisibilityBtn) {
+                toggleGradcamVisibilityBtn.textContent = visible ? 'Hide Heatmap' : 'Show Heatmap';
+                toggleGradcamVisibilityBtn.setAttribute('aria-expanded', String(visible));
+            }
+            if (!visible) {
+                setGradcamDrawMode(false);
+            }
+        }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function renderXrayBoxes() {
+            if (!xrayOverlay) return;
+
+            // Remove old rendered boxes but keep preview box if drawing.
+            Array.from(xrayOverlay.querySelectorAll('.xray-box')).forEach(el => el.remove());
+
+            xrayBoxAnnotations.forEach((box, index) => {
+                const boxEl = document.createElement('div');
+                boxEl.className = 'xray-box';
+                boxEl.style.left = `${box.x}%`;
+                boxEl.style.top = `${box.y}%`;
+                boxEl.style.width = `${box.w}%`;
+                boxEl.style.height = `${box.h}%`;
+                boxEl.title = 'Double click to remove this box';
+
+                const labelEl = document.createElement('span');
+                labelEl.className = 'xray-box-label';
+                labelEl.textContent = `Area ${index + 1}`;
+                boxEl.appendChild(labelEl);
+
+                boxEl.addEventListener('dblclick', (event) => {
+                    event.stopPropagation();
+                    xrayBoxAnnotations.splice(index, 1);
+                    renderXrayBoxes();
+                });
+
+                xrayOverlay.appendChild(boxEl);
+            });
+
+            if (xrayBoxHint) {
+                xrayBoxHint.textContent = xrayBoxAnnotations.length > 0
+                    ? `${xrayBoxAnnotations.length} area(s) marked. Double click a box to remove it.`
+                    : 'Tip: Enable Draw Box, then drag on X-ray to mark pneumonia area.';
+            }
+        }
+
+        function setXrayDrawMode(enabled) {
+            xrayDrawMode = enabled;
+            if (toggleDrawModeBtn) {
+                toggleDrawModeBtn.classList.toggle('active', enabled);
+                toggleDrawModeBtn.textContent = enabled ? 'Drawing Enabled' : 'Draw Box';
+            }
+            if (xrayOverlay) {
+                xrayOverlay.classList.toggle('draw-off', !enabled);
+            }
+        }
+
+        function renderGradcamBoxes() {
+            if (!gradcamOverlay) return;
+
+            Array.from(gradcamOverlay.querySelectorAll('.xray-box')).forEach(el => el.remove());
+
+            gradcamBoxAnnotations.forEach((box, index) => {
+                const boxEl = document.createElement('div');
+                boxEl.className = 'xray-box';
+                boxEl.style.left = `${box.x}%`;
+                boxEl.style.top = `${box.y}%`;
+                boxEl.style.width = `${box.w}%`;
+                boxEl.style.height = `${box.h}%`;
+                boxEl.title = 'Double click to remove this box';
+
+                const labelEl = document.createElement('span');
+                labelEl.className = 'xray-box-label';
+                labelEl.textContent = `GC Area ${index + 1}`;
+                boxEl.appendChild(labelEl);
+
+                boxEl.addEventListener('dblclick', (event) => {
+                    event.stopPropagation();
+                    gradcamBoxAnnotations.splice(index, 1);
+                    renderGradcamBoxes();
+                });
+
+                gradcamOverlay.appendChild(boxEl);
+            });
+
+            if (gradcamBoxHint) {
+                gradcamBoxHint.textContent = gradcamBoxAnnotations.length > 0
+                    ? `${gradcamBoxAnnotations.length} area(s) marked on Grad-CAM. Double click a box to remove it.`
+                    : 'Tip: Mark explainability focus regions on Grad-CAM.';
+            }
+        }
+
+        function setGradcamDrawMode(enabled) {
+            gradcamDrawMode = enabled;
+            if (toggleGradcamDrawModeBtn) {
+                toggleGradcamDrawModeBtn.classList.toggle('active', enabled);
+                toggleGradcamDrawModeBtn.textContent = enabled ? 'Drawing Enabled' : 'Draw Box';
+            }
+            if (gradcamOverlay) {
+                gradcamOverlay.classList.toggle('draw-off', !enabled);
+            }
+        }
+
+        function setupXrayBoxDrawing() {
+            if (!xrayOverlay) return;
+
+            toggleDrawModeBtn?.addEventListener('click', () => {
+                setXrayDrawMode(!xrayDrawMode);
+            });
+
+            undoBoxBtn?.addEventListener('click', () => {
+                if (xrayBoxAnnotations.length > 0) {
+                    xrayBoxAnnotations.pop();
+                    renderXrayBoxes();
+                }
+            });
+
+            clearBoxesBtn?.addEventListener('click', () => {
+                if (xrayBoxAnnotations.length > 0 && !confirm('Clear all marked X-ray areas?')) {
+                    return;
+                }
+                xrayBoxAnnotations = [];
+                renderXrayBoxes();
+            });
+
+            xrayOverlay.addEventListener('mousedown', (event) => {
+                if (!xrayDrawMode || event.button !== 0 || event.target.classList.contains('xray-box')) {
+                    return;
+                }
+
+                const rect = xrayOverlay.getBoundingClientRect();
+                const startX = event.clientX - rect.left;
+                const startY = event.clientY - rect.top;
+
+                xrayIsDrawing = true;
+                xrayDrawStart = { x: startX, y: startY };
+
+                xrayPreviewBox = document.createElement('div');
+                xrayPreviewBox.className = 'xray-box-preview';
+                xrayOverlay.appendChild(xrayPreviewBox);
+            });
+
+            window.addEventListener('mousemove', (event) => {
+                if (!xrayIsDrawing || !xrayPreviewBox || !xrayDrawStart) return;
+
+                const rect = xrayOverlay.getBoundingClientRect();
+                const currentX = clamp(event.clientX - rect.left, 0, rect.width);
+                const currentY = clamp(event.clientY - rect.top, 0, rect.height);
+
+                const left = Math.min(xrayDrawStart.x, currentX);
+                const top = Math.min(xrayDrawStart.y, currentY);
+                const width = Math.abs(currentX - xrayDrawStart.x);
+                const height = Math.abs(currentY - xrayDrawStart.y);
+
+                xrayPreviewBox.style.left = `${left}px`;
+                xrayPreviewBox.style.top = `${top}px`;
+                xrayPreviewBox.style.width = `${width}px`;
+                xrayPreviewBox.style.height = `${height}px`;
+            });
+
+            window.addEventListener('mouseup', (event) => {
+                if (!xrayIsDrawing || !xrayPreviewBox || !xrayDrawStart) return;
+
+                const rect = xrayOverlay.getBoundingClientRect();
+                const endX = clamp(event.clientX - rect.left, 0, rect.width);
+                const endY = clamp(event.clientY - rect.top, 0, rect.height);
+                const left = Math.min(xrayDrawStart.x, endX);
+                const top = Math.min(xrayDrawStart.y, endY);
+                const width = Math.abs(endX - xrayDrawStart.x);
+                const height = Math.abs(endY - xrayDrawStart.y);
+
+                xrayPreviewBox.remove();
+                xrayPreviewBox = null;
+                xrayIsDrawing = false;
+
+                if (width < 8 || height < 8 || rect.width <= 0 || rect.height <= 0) {
+                    xrayDrawStart = null;
+                    return;
+                }
+
+                xrayBoxAnnotations.push({
+                    x: Number(((left / rect.width) * 100).toFixed(3)),
+                    y: Number(((top / rect.height) * 100).toFixed(3)),
+                    w: Number(((width / rect.width) * 100).toFixed(3)),
+                    h: Number(((height / rect.height) * 100).toFixed(3))
+                });
+                xrayDrawStart = null;
+                renderXrayBoxes();
+            });
+
+            setXrayDrawMode(false);
+            renderXrayBoxes();
+        }
+
+        function setupGradcamBoxDrawing() {
+            if (!gradcamOverlay) return;
+
+            toggleGradcamDrawModeBtn?.addEventListener('click', () => {
+                setGradcamDrawMode(!gradcamDrawMode);
+            });
+
+            undoGradcamBoxBtn?.addEventListener('click', () => {
+                if (gradcamBoxAnnotations.length > 0) {
+                    gradcamBoxAnnotations.pop();
+                    renderGradcamBoxes();
+                }
+            });
+
+            clearGradcamBoxesBtn?.addEventListener('click', () => {
+                if (gradcamBoxAnnotations.length > 0 && !confirm('Clear all marked Grad-CAM areas?')) {
+                    return;
+                }
+                gradcamBoxAnnotations = [];
+                renderGradcamBoxes();
+            });
+
+            gradcamOverlay.addEventListener('mousedown', (event) => {
+                if (!gradcamDrawMode || event.button !== 0 || event.target.classList.contains('xray-box')) {
+                    return;
+                }
+
+                const rect = gradcamOverlay.getBoundingClientRect();
+                const startX = event.clientX - rect.left;
+                const startY = event.clientY - rect.top;
+
+                gradcamIsDrawing = true;
+                gradcamDrawStart = { x: startX, y: startY };
+
+                gradcamPreviewBox = document.createElement('div');
+                gradcamPreviewBox.className = 'xray-box-preview';
+                gradcamOverlay.appendChild(gradcamPreviewBox);
+            });
+
+            window.addEventListener('mousemove', (event) => {
+                if (!gradcamIsDrawing || !gradcamPreviewBox || !gradcamDrawStart) return;
+
+                const rect = gradcamOverlay.getBoundingClientRect();
+                const currentX = clamp(event.clientX - rect.left, 0, rect.width);
+                const currentY = clamp(event.clientY - rect.top, 0, rect.height);
+
+                const left = Math.min(gradcamDrawStart.x, currentX);
+                const top = Math.min(gradcamDrawStart.y, currentY);
+                const width = Math.abs(currentX - gradcamDrawStart.x);
+                const height = Math.abs(currentY - gradcamDrawStart.y);
+
+                gradcamPreviewBox.style.left = `${left}px`;
+                gradcamPreviewBox.style.top = `${top}px`;
+                gradcamPreviewBox.style.width = `${width}px`;
+                gradcamPreviewBox.style.height = `${height}px`;
+            });
+
+            window.addEventListener('mouseup', (event) => {
+                if (!gradcamIsDrawing || !gradcamPreviewBox || !gradcamDrawStart) return;
+
+                const rect = gradcamOverlay.getBoundingClientRect();
+                const endX = clamp(event.clientX - rect.left, 0, rect.width);
+                const endY = clamp(event.clientY - rect.top, 0, rect.height);
+                const left = Math.min(gradcamDrawStart.x, endX);
+                const top = Math.min(gradcamDrawStart.y, endY);
+                const width = Math.abs(endX - gradcamDrawStart.x);
+                const height = Math.abs(endY - gradcamDrawStart.y);
+
+                gradcamPreviewBox.remove();
+                gradcamPreviewBox = null;
+                gradcamIsDrawing = false;
+
+                if (width < 8 || height < 8 || rect.width <= 0 || rect.height <= 0) {
+                    gradcamDrawStart = null;
+                    return;
+                }
+
+                gradcamBoxAnnotations.push({
+                    x: Number(((left / rect.width) * 100).toFixed(3)),
+                    y: Number(((top / rect.height) * 100).toFixed(3)),
+                    w: Number(((width / rect.width) * 100).toFixed(3)),
+                    h: Number(((height / rect.height) * 100).toFixed(3))
+                });
+                gradcamDrawStart = null;
+                renderGradcamBoxes();
+            });
+
+            setGradcamDrawMode(false);
+            renderGradcamBoxes();
+        }
+
+        setupXrayBoxDrawing();
+        setupGradcamBoxDrawing();
+
+        toggleGradcamVisibilityBtn?.addEventListener('click', () => {
+            setGradcamVisibility(!gradcamImageVisible);
+        });
+
+        // Confidence score modal
+        confidenceInfoBtn?.addEventListener('click', () => {
+            confidenceModal.classList.add('active');
+        });
+
+        confidenceModalClose?.addEventListener('click', () => {
+            confidenceModal.classList.remove('active');
+        });
+
+        // CURB-65 modal
+        curbInfoBtn?.addEventListener('click', () => {
+            curbModal.classList.add('active');
+        });
+
+        curbModalClose?.addEventListener('click', () => {
+            curbModal.classList.remove('active');
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === confidenceModal) {
+                confidenceModal.classList.remove('active');
+            }
+            if (event.target === curbModal) {
+                curbModal.classList.remove('active');
+            }
+        });
+
+        // Populate results from sessionStorage (filled by the API response)
+        document.addEventListener('DOMContentLoaded', function(){
+            try{
+                const resultStr = sessionStorage.getItem('analysis_result');
+                if(!resultStr){
+                    document.getElementById('diagnosisStatus').textContent = 'No analysis data found';
+                    return;
+                }
+
+                const result = JSON.parse(resultStr);
+
+                // Store analysis_id globally for later use
+                currentAnalysisId = result.analysis_id;
+
+                // Update image - fetch directly from dedicated image endpoint
+                if(result.image_url){
+                    const imgElement = document.getElementById('resultXray');
+                    imgElement.src = result.image_url;
+                }
+
+                if (gradcamPanel && gradcamImage) {
+                    gradcamPanel.style.display = 'none';
+                    gradcamImage.removeAttribute('src');
+                    toggleGradcamVisibilityBtn.style.display = 'none';
+                    setGradcamVisibility(true);
+                    setGradcamDrawMode(false);
+                    gradcamBoxAnnotations = [];
+                    renderGradcamBoxes();
+                }
+
+                // Update patient meta
+                const patientMeta = `Patient: ${result.patient_name} • Age: ${result.age} • ID: ${result.medical_id}`;
+                document.getElementById('patientMeta').textContent = patientMeta;
+
+                // Update AI diagnosis
+                const status = result.pneumonia_detected ? 'PNEUMONIA' : 'NORMAL';
+                document.getElementById('diagnosisStatus').textContent = status;
+                document.getElementById('confidenceScore').textContent = result.confidence.toFixed(1) + '%';
+
+                // Update CURB-65
+                document.getElementById('resultCurb').textContent = result.curb_score.score;
+                
+                // Hospital-grade color coding for CURB-65 risk
+                let riskColor = '#28a745';  // Green - Low (Score 0-1)
+                if(result.curb_score.score >= 4) {
+                    riskColor = '#c82333';  // Dark Red - Critical (Score 4-5)
+                } else if(result.curb_score.score === 3) {
+                    riskColor = '#dc3545';  // Red - High (Score 3)
+                } else if(result.curb_score.score === 2) {
+                    riskColor = '#ff9800';  // Orange - Moderate (Score 2)
+                } else if(result.curb_score.risk === 'Moderate') {
+                    riskColor = '#ff9800';  // Orange - Moderate
+                } else if(result.curb_score.risk === 'High') {
+                    riskColor = '#dc3545';  // Red - High
+                } else if(result.curb_score.risk === 'Very High' || result.curb_score.risk === 'Critical') {
+                    riskColor = '#c82333';  // Dark Red - Very High/Critical
+                }
+                
+                document.getElementById('riskLevel').textContent = 'Risk: ' + result.curb_score.risk;
+                document.getElementById('riskLevel').style.color = riskColor;
+
+                // Update action (based on hospital-grade CURB-65 recommendations)
+                let action = 'Outpatient care';  // 0-1
+                if(result.curb_score.score === 2) {
+                    action = 'Consider hospital admission';
+                } else if(result.curb_score.score === 3) {
+                    action = 'Hospital admission recommended';
+                } else if(result.curb_score.score >= 4) {
+                    action = 'ICU consideration recommended';
+                }
+                document.getElementById('action').textContent = 'Action: ' + action;
+
+                // Show Send Alert button only if pneumonia detected
+                if (result.pneumonia_detected) {
+                    const sendAlertBtn = document.getElementById('sendAlertBtn');
+                    sendAlertBtn.style.display = 'flex';
+                    // Store result for alert sending
+                    window.currentAnalysisResult = result;
+                }
+
+                // Reset and then hydrate X-ray box annotations for this analysis.
+                xrayBoxAnnotations = [];
+                gradcamBoxAnnotations = [];
+                renderXrayBoxes();
+                renderGradcamBoxes();
+
+                // Load annotations if they exist
+                if (result.annotations) {
+                    document.getElementById('doctorName').value = result.annotations.doctor_name || '';
+                    document.getElementById('finalDiagnosis').value = result.annotations.final_diagnosis || '';
+                    document.getElementById('clinicalNotes').value = result.annotations.clinical_notes || '';
+                    document.getElementById('treatmentPlan').value = result.annotations.treatment_plan || '';
+                    document.getElementById('followUpInstructions').value = result.annotations.follow_up_instructions || '';
+
+                    if (Array.isArray(result.annotations.xray_boxes)) {
+                        xrayBoxAnnotations = result.annotations.xray_boxes;
+                        renderXrayBoxes();
+                    }
+                    if (Array.isArray(result.annotations.gradcam_boxes)) {
+                        gradcamBoxAnnotations = result.annotations.gradcam_boxes;
+                        renderGradcamBoxes();
+                    }
+                }
+
+            }catch(err){
+                console.warn('Unable to load analysis result:', err);
+                document.getElementById('diagnosisStatus').textContent = 'Error loading data';
+            }
+        });
+
+        // Download report — pure HTML print window
+        document.getElementById('downloadReport')?.addEventListener('click', function(e){
+            e.preventDefault();
+            generateReport();
+        });
+
+        function generateReport() {
+            try {
+                const resultStr = sessionStorage.getItem('analysis_result');
+                if (!resultStr) {
+                    alert('No analysis data found. Please complete an analysis first.');
+                    return;
+                }
+                const result = JSON.parse(resultStr);
+
+                // Capture current form values
+                const doctorName        = document.getElementById('doctorName')?.value || '';
+                const finalDiagnosis    = document.getElementById('finalDiagnosis')?.value || '';
+                const clinicalNotes     = document.getElementById('clinicalNotes')?.value || '';
+                const treatmentPlan     = document.getElementById('treatmentPlan')?.value || '';
+                const followUp          = document.getElementById('followUpInstructions')?.value || '';
+
+                const now         = new Date();
+                const reportDate  = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+                const reportTime  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                // Derived values
+                const isPositive  = result.pneumonia_detected;
+                const conf        = result.confidence.toFixed(1);
+                const confNum     = parseFloat(conf);
+                const curbScore   = result.curb_score.score;
+                const curbRisk    = result.curb_score.risk;
+                const curbMortality = ['0.7%','3.2%','13%','17%','41.5%','57%'][curbScore] || '—';
+                let curbAction = 'Outpatient treatment';
+                if (curbScore === 2) curbAction = 'Consider hospital admission';
+                else if (curbScore === 3) curbAction = 'Hospital admission recommended';
+                else if (curbScore >= 4) curbAction = 'ICU consideration recommended';
+
+                const confNote = confNum >= 85 ? 'Very high confidence — strong radiological evidence.' :
+                                 confNum >= 70 ? 'High confidence — clear pneumonia features visible.' :
+                                 confNum >= 40 ? 'Moderate confidence — clinical correlation required.' :
+                                                 'Low confidence — careful clinical review needed.';
+
+                const reportBoxes = Array.isArray(xrayBoxAnnotations) ? xrayBoxAnnotations : [];
+                const xrayBoxesMarkup = reportBoxes.map((box, index) => {
+                    const left = Math.max(0, Math.min(100, Number(box.x) || 0));
+                    const top = Math.max(0, Math.min(100, Number(box.y) || 0));
+                    const width = Math.max(0, Math.min(100 - left, Number(box.w) || 0));
+                    const height = Math.max(0, Math.min(100 - top, Number(box.h) || 0));
+
+                    return `<div class="xray-report-box" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%;"><span class="xray-report-box-label">Area ${index + 1}</span></div>`;
+                }).join('');
+
+                const reportGradcamBoxes = Array.isArray(gradcamBoxAnnotations) ? gradcamBoxAnnotations : [];
+                const gradcamBoxesMarkup = reportGradcamBoxes.map((box, index) => {
+                    const left = Math.max(0, Math.min(100, Number(box.x) || 0));
+                    const top = Math.max(0, Math.min(100, Number(box.y) || 0));
+                    const width = Math.max(0, Math.min(100 - left, Number(box.w) || 0));
+                    const height = Math.max(0, Math.min(100 - top, Number(box.h) || 0));
+
+                    return `<div class="xray-report-box" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%;"><span class="xray-report-box-label">Area ${index + 1}</span></div>`;
+                }).join('');
+
+                // Imaging section (absolute URLs for print window)
+                const xrayUrl = result.image_url ? (result.image_url.startsWith('http') ? result.image_url : window.location.origin + result.image_url) : '';
+                const canShowGradcamInReport = false;
+
+                const xrayFigure = xrayUrl ? `
+                    <div style="text-align:center">
+                        <div class="xray-report-wrap">
+                            <img src="${xrayUrl}" alt="Chest X-Ray" style="max-width:100%;max-height:320px;object-fit:contain;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;display:block;margin:0 auto"/>
+                            ${xrayBoxesMarkup ? `<div class="xray-report-overlay">${xrayBoxesMarkup}</div>` : ''}
+                        </div>
+                        <div style="margin-top:8px;font-size:10px;color:#64748b;font-style:italic">Figure 1. Chest X-Ray - Medical ID: ${result.medical_id} &bull; ${reportDate}</div>
+                    </div>` : '';
+
+                const gradcamFigure = canShowGradcamInReport ? '' : '';
+
+                const xraySection = xrayUrl ? `
+                    <div class="sec-title">Chest Imaging</div>
+                    <div style="margin-bottom:28px">
+                        <div class="report-imaging-grid one-col">
+                            ${xrayFigure}
+                            ${gradcamFigure}
+                        </div>
+                    </div>` : '';
+
+                // Row helper for data table
+                const row = (label, value, bold) => `
+                    <tr>
+                        <td style="padding:9px 14px;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.6px;width:40%;border-bottom:1px solid #f1f5f9;background:#fafbff">${label}</td>
+                        <td style="padding:9px 14px;font-size:12.5px;color:#0f172a;border-bottom:1px solid #f1f5f9;${bold ? 'font-weight:700' : ''}">${value}</td>
+                    </tr>`;
+
+                // Annotation section helper
+                const buildSection = (label, content) => content.trim() ? `
+                    <div style="margin-bottom:18px">
+                        <div style="font-size:10px;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">${label}</div>
+                        <div style="background:#fafbff;border:1px solid #e2e8f0;border-left:3px solid #4f46e5;border-radius:0 6px 6px 0;padding:10px 14px;font-size:12px;color:#334155;line-height:1.7;white-space:pre-wrap">${content.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                    </div>` : '';
+
+                const hasAnnotations = doctorName||finalDiagnosis||clinicalNotes||treatmentPlan||followUp;
+                const annotationsSection = hasAnnotations ? `
+                    <div class="sec-title" style="margin-top:32px">Doctor's Annotations</div>
+                    <table class="data-table" style="margin-bottom:18px">
+                        ${doctorName ? row('Reviewing Doctor', doctorName, true) : ''}
+                        ${finalDiagnosis ? row('Final Diagnosis', finalDiagnosis, true) : ''}
+                    </table>
+                    ${buildSection('Clinical Notes', clinicalNotes)}
+                    ${buildSection('Treatment Plan', treatmentPlan)}
+                    ${buildSection('Follow-up Instructions', followUp)}
+                ` : '';
+
+                const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Patient Analysis Report – PneumoDetect AI</title>
+<style>
+    @page { size: A4 portrait; margin: 18mm 16mm 20mm 16mm; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { background:#e5e7eb; }
+    body { font-family:'Inter','Segoe UI',Arial,sans-serif; color:#0f172a; background:#fff; font-size:12px;
+           width:210mm; min-height:297mm; margin:0 auto;
+           box-shadow:0 0 40px rgba(0,0,0,.15); }
+
+    /* ── HERO ── */
+    .hero {
+        background: linear-gradient(135deg,#0f172a 0%,#1e1b4b 40%,#312e81 70%,#4c1d95 100%);
+        padding:40px 48px 34px; position:relative; overflow:hidden;
+    }
+    .hero::before {
+        content:''; position:absolute; inset:0;
+        background: radial-gradient(ellipse at 80% 50%,rgba(102,126,234,.2) 0%,transparent 60%),
+                    radial-gradient(ellipse at 20% 80%,rgba(118,75,162,.15) 0%,transparent 50%);
+    }
+    .hero::after {
+        content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+        background:linear-gradient(90deg,transparent,rgba(165,180,252,.7),transparent);
+    }
+    .hero-top { position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start; }
+    .brand-block { display:flex;align-items:center;gap:14px; }
+    .brand-icon {
+        width:46px;height:46px;
+        background:linear-gradient(135deg,rgba(102,126,234,.3),rgba(118,75,162,.3));
+        border:1px solid rgba(255,255,255,.18);border-radius:12px;
+        display:flex;align-items:center;justify-content:center;
+    }
+    .brand-name { font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px; }
+    .brand-sub  { font-size:9px;color:rgba(165,180,252,.9);font-weight:500;letter-spacing:2px;text-transform:uppercase;margin-top:2px; }
+    .report-title-block { text-align:right; }
+    .report-title  { font-size:18px;font-weight:800;color:#fff;margin-bottom:6px; }
+    .meta-line     { font-size:10px;color:rgba(203,213,225,.8);margin-bottom:2px; }
+    .meta-line span { color:rgba(165,180,252,1);font-weight:600; }
+    .conf-badge {
+        display:inline-flex;align-items:center;gap:4px;margin-top:8px;
+        padding:3px 10px;background:rgba(251,191,36,.14);color:#fbbf24;
+        border:1px solid rgba(251,191,36,.35);border-radius:20px;
+        font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    }
+    .conf-badge::before { content:'●';font-size:6px; }
+    .patient-bar {
+        position:relative;z-index:1;
+        margin-top:18px;padding:12px 16px;
+        background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;
+        display:flex;gap:0;
+    }
+    .pi { flex:1;display:flex;flex-direction:column;gap:2px;padding:0 14px;border-right:1px solid rgba(255,255,255,.1); }
+    .pi:first-child { padding-left:0; }
+    .pi:last-child  { border-right:none; }
+    .pi-lbl { font-size:8px;color:rgba(165,180,252,.75);text-transform:uppercase;letter-spacing:1.5px;font-weight:600; }
+    .pi-val { font-size:12px;font-weight:700;color:#fff; }
+
+    /* ── BODY ── */
+    .report-body { padding:32px 48px 52px; }
+
+    .sec-title {
+        display:flex;align-items:center;gap:10px;
+        font-size:9px;font-weight:700;color:#4f46e5;
+        text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;margin-top:0;
+    }
+    .sec-title::after { content:'';flex:1;height:1px;background:linear-gradient(90deg,#dde4ff,transparent); }
+
+    .data-table {
+        width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;
+        overflow:hidden;margin-bottom:28px;font-size:12px;
+    }
+    .data-table thead tr th {
+        background:linear-gradient(135deg,#1e1b4b,#312e81);
+        color:rgba(199,210,254,.95);font-size:9px;font-weight:700;
+        text-transform:uppercase;letter-spacing:1.5px;padding:10px 14px;text-align:left;
+    }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+
+    .diag-row {
+        display:flex;align-items:center;gap:12px;
+        padding:14px 18px;border:1px solid #e2e8f0;border-radius:8px;
+        background:#fafbff;margin-bottom:28px;
+    }
+    .diag-badge {
+        padding:5px 14px;border-radius:4px;font-size:11px;font-weight:800;
+        letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;
+        color:#fff;
+    }
+    .diag-badge.positive { background:#dc2626; }
+    .diag-badge.negative { background:#059669; }
+    .diag-label { font-size:11px;color:#475569; }
+
+    .summary-2col { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px; }
+    .s-card {
+        background:#fafbff;border:1px solid #e2e8f0;border-top:2px solid #4f46e5;
+        border-radius:8px;padding:18px 20px;
+    }
+    .s-card .sc-lbl { font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px; }
+    .s-card .sc-val { font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-.3px; }
+    .s-card .sc-note { font-size:10px;color:#64748b;margin-top:6px;line-height:1.5; }
+
+    .action-box {
+        background:#fafbff;border:1px solid #e2e8f0;border-left:3px solid #1e1b4b;
+        border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:28px;
+    }
+    .action-box .ab-title { font-size:10px;font-weight:700;color:#0f172a;margin-bottom:6px; }
+    .action-box .ab-text  { font-size:12px;color:#334155; }
+    .action-box .ab-note  { font-size:10px;color:#94a3b8;margin-top:8px;font-style:italic;line-height:1.5; }
+
+    .xray-report-wrap { position:relative; display:inline-block; max-width:100%; }
+    .report-imaging-grid { display:grid; gap:16px; align-items:start; }
+    .report-imaging-grid.one-col { grid-template-columns:1fr; }
+    .xray-report-overlay { position:absolute; inset:0; pointer-events:none; }
+    .xray-report-box { position:absolute; border:2px solid #dc2626; background:rgba(220,38,38,.15); box-sizing:border-box; }
+    .xray-report-box-label {
+        position:absolute; top:-16px; left:0;
+        font-size:9px; font-weight:700; color:#fff;
+        background:#dc2626; border-radius:4px; padding:1px 6px; line-height:1.2;
+    }
+    @media (max-width: 900px) {
+        .report-imaging-grid.one-col { grid-template-columns:1fr; }
+    }
+
+    .report-footer {
+        margin-top:44px;padding-top:22px;border-top:1px solid #e2e8f0;
+        display:flex;justify-content:space-between;align-items:flex-end;
+    }
+    .footer-left .fl-brand { font-size:12px;font-weight:800;color:#4f46e5;margin-bottom:3px; }
+    .footer-left p { font-size:9px;color:#94a3b8;margin-bottom:2px; }
+    .footer-sig { text-align:right; }
+    .footer-sig .fs-note { font-size:8px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:56px; }
+    .footer-sig .fs-line  { border-top:1px solid #334155;width:200px;margin:0 0 8px auto; }
+    .footer-sig .fs-name  { font-size:11px;font-weight:700;color:#1e293b; }
+    .footer-sig .fs-role  { font-size:9px;color:#64748b; }
+    .watermark { position:fixed;bottom:16px;right:28px;font-size:8px;color:#cbd5e1;font-weight:500;letter-spacing:.5px; }
+
+    @media print {
+        html { background:#fff; }
+        body { box-shadow:none;margin:0;width:100%; -webkit-print-color-adjust:exact;print-color-adjust:exact; }
+        .hero { -webkit-print-color-adjust:exact;print-color-adjust:exact; }
+    }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-top">
+        <div class="brand-block">
+            <div class="brand-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(165,180,252,1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+            </div>
+            <div>
+                <div class="brand-name">PneumoDetect AI</div>
+                <div class="brand-sub">Hospital Management System</div>
+            </div>
+        </div>
+        <div class="report-title-block">
+            <div class="report-title">Patient Analysis Report</div>
+            <div class="meta-line">Generated: <span>${reportDate} at ${reportTime}</span></div>
+            <div class="meta-line">Prepared by: <span>${currentUserNameCache}</span></div>
+            <span class="conf-badge">Strictly Confidential</span>
+        </div>
+    </div>
+    <div class="patient-bar">
+        <div class="pi"><div class="pi-lbl">Patient Name</div><div class="pi-val">${result.patient_name}</div></div>
+        <div class="pi"><div class="pi-lbl">Age</div><div class="pi-val">${result.age} years</div></div>
+        <div class="pi"><div class="pi-lbl">Medical ID</div><div class="pi-val">${result.medical_id}</div></div>
+        <div class="pi"><div class="pi-lbl">Analysis Date</div><div class="pi-val">${reportDate}</div></div>
+    </div>
+</div>
+
+<!-- BODY -->
+<div class="report-body">
+
+    <!-- Patient Information -->
+    <div class="sec-title" style="margin-top:8px">Patient Information</div>
+    <table class="data-table">
+        <tbody>
+            ${row('Full Name', result.patient_name, true)}
+            ${row('Age', result.age + ' years old', false)}
+            ${row('Medical Record No.', result.medical_id, true)}
+            ${row('Report Generated', reportDate + ' at ' + reportTime, false)}
+            ${row('Prepared By', currentUserNameCache, false)}
+        </tbody>
+    </table>
+
+    <!-- Chest X-Ray -->
+    ${xraySection}
+
+    <!-- AI Diagnosis -->
+    <div class="sec-title" style="margin-top:32px">AI Diagnosis Result</div>
+    <div class="diag-row">
+        <span class="diag-badge ${isPositive ? 'positive' : 'negative'}">${isPositive ? 'Pneumonia Detected' : 'No Pneumonia — Normal'}</span>
+        <span class="diag-label">AI-assisted chest X-ray analysis &bull; PneumoDetect Neural Network</span>
+    </div>
+    <div class="summary-2col">
+        <div class="s-card">
+            <div class="sc-lbl">Confidence Score</div>
+            <div class="sc-val">${conf}%</div>
+            <div class="sc-note">${confNote}</div>
+        </div>
+        <div class="s-card">
+            <div class="sc-lbl">Diagnosis Status</div>
+            <div class="sc-val" style="font-size:15px;color:${isPositive ? '#dc2626' : '#059669'}">${isPositive ? 'Positive - Pneumonia' : 'Negative - Normal'}</div>
+            <div class="sc-note">Based on deep learning model analysis</div>
+        </div>
+    </div>
+
+    <!-- CURB-65 -->
+    <div class="sec-title" style="margin-top:32px">CURB-65 Severity Assessment</div>
+    <table class="data-table" style="margin-bottom:14px">
+        <thead><tr>
+            <th>Parameter</th><th>Value</th>
+        </tr></thead>
+        <tbody>
+            ${row('Total CURB-65 Score', curbScore + ' / 5', true)}
+            <tr>
+                <td style="padding:9px 14px;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.6px;width:40%;border-bottom:1px solid #f1f5f9;background:#fafbff">Risk Category</td>
+                <td style="padding:9px 14px;border-bottom:1px solid #f1f5f9">
+                    <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+                        background:${curbScore<=1?'#dcfce7':curbScore===2?'#fef9c3':curbScore===3?'#fee2e2':'#fce7e7'};
+                        color:${curbScore<=1?'#15803d':curbScore===2?'#92400e':curbScore===3?'#dc2626':'#991b1b'};
+                        border:1px solid ${curbScore<=1?'#bbf7d0':curbScore===2?'#fde68a':curbScore===3?'#fca5a5':'#f87171'}">${curbRisk}</span>
+                </td>
+            </tr>
+            ${row('Estimated 30-Day Mortality', curbMortality, false)}
+        </tbody>
+    </table>
+    <div class="action-box">
+        <div class="ab-title">Recommended Clinical Action</div>
+        <div class="ab-text">${curbAction}</div>
+        <div class="ab-note">Based on validated CURB-65 criteria (Lim et al. 2003 Thorax). Final clinical decision must be made by qualified medical professionals.</div>
+    </div>
+
+    ${annotationsSection}
+
+    <!-- Footer -->
+    <div class="report-footer">
+        <div class="footer-left">
+            <div class="fl-brand">PneumoDetect AI</div>
+            <p>Patient Analysis Report &bull; ${reportDate}</p>
+            <p>This document is strictly confidential and for authorized personnel only.</p>
+        </div>
+        <div class="footer-sig">
+            <div class="fs-note">Authorized Signature</div>
+            <div class="fs-line"></div>
+            <div class="fs-name">${doctorName || currentUserNameCache}</div>
+            <div class="fs-role">${doctorName ? (finalDiagnosis ? finalDiagnosis : 'Attending Physician') : 'Medical Staff'} &mdash; PneumoDetect AI</div>
+        </div>
+    </div>
+</div>
+
+<div class="watermark">PneumoDetect AI &bull; Confidential</div>
+<script>window.onload = function() { window.print(); }<\/script>
+</body></html>`;
+
+                const win = window.open('', '_blank');
+                win.document.write(html);
+                win.document.close();
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Error generating report: ' + error.message);
+            }
+        }
+
+        // Save annotations handler
+        document.getElementById('saveAnnotationsBtn')?.addEventListener('click', async function(e){
+            e.preventDefault();
+            
+            if (!currentAnalysisId) {
+                alert('No analysis data found. Please complete an analysis first.');
+                return;
+            }
+            
+            try {
+                // Collect annotation data
+                const annotationData = {
+                    analysis_id: currentAnalysisId,
+                    doctor_name: document.getElementById('doctorName')?.value || '',
+                    final_diagnosis: document.getElementById('finalDiagnosis')?.value || '',
+                    clinical_notes: document.getElementById('clinicalNotes')?.value || '',
+                    treatment_plan: document.getElementById('treatmentPlan')?.value || '',
+                    follow_up_instructions: document.getElementById('followUpInstructions')?.value || '',
+                    xray_boxes: xrayBoxAnnotations,
+                    gradcam_boxes: gradcamBoxAnnotations
+                };
+
+                // Send to backend
+                const response = await fetch('/api/save-annotations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(annotationData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save annotations');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Annotations saved successfully!');
+                } else {
+                    alert('Error saving annotations: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error saving annotations:', error);
+                alert('Failed to save annotations. Please try again.');
+            }
+        });
+
+        // Send Alert to Doctor handler
+        let availableDoctors = [];
+        let selectedDoctorId = null;
+
+        document.getElementById('sendAlertBtn')?.addEventListener('click', async function(e){
+            e.preventDefault();
+            
+            if (!window.currentAnalysisResult) {
+                alert('No analysis data found. Please complete an analysis first.');
+                return;
+            }
+
+            try {
+                // Get list of doctors from the system
+                const doctorsResponse = await fetch('/api/users?role=doctor');
+                const doctorsData = await doctorsResponse.json();
+                
+                if (!doctorsData.success || !doctorsData.users || doctorsData.users.length === 0) {
+                    alert('No doctors available in the system.');
+                    return;
+                }
+
+                // Store doctors and show modal
+                availableDoctors = doctorsData.users;
+                selectedDoctorId = null;
+                
+                // Populate doctor list
+                const doctorListHTML = availableDoctors.map(doctor => {
+                    const roleName = doctor.role.charAt(0).toUpperCase() + doctor.role.slice(1);
+                    const department = doctor.department || 'Not Assigned';
+                    return `
+                    <label class="doctor-item" data-doctor-id="${doctor.id}">
+                        <input type="radio" name="selected_doctor" value="${doctor.id}" style="cursor: pointer;">
+                        <div class="doctor-info">
+                            <div class="doctor-name">${doctor.name}</div>
+                            <div class="doctor-role">${roleName} • ${department}</div>
+                        </div>
+                    </label>
+                    `;
+                }).join('');
+                
+                document.getElementById('doctorListContainer').innerHTML = doctorListHTML;
+                
+                // Add change handlers to radio buttons
+                document.querySelectorAll('input[name="selected_doctor"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        selectedDoctorId = parseInt(this.value);
+                        document.querySelectorAll('.doctor-item').forEach(item => item.classList.remove('selected'));
+                        this.closest('.doctor-item').classList.add('selected');
+                        document.getElementById('alertModalSend').disabled = false;
+                    });
+                });
+                
+                // Show modal
+                document.getElementById('alertDoctorModal').classList.add('active');
+                
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+                alert('Failed to load doctors. Please try again.');
+            }
+        });
+
+        // Cancel alert modal
+        document.getElementById('alertModalCancel')?.addEventListener('click', function() {
+            document.getElementById('alertDoctorModal').classList.remove('active');
+            selectedDoctorId = null;
+        });
+
+        // Send alert after doctor selected
+        document.getElementById('alertModalSend')?.addEventListener('click', async function() {
+            if (!selectedDoctorId) {
+                alert('Please select a doctor');
+                return;
+            }
+
+            this.disabled = true;
+            const buttonText = this.innerHTML;
+            this.innerHTML = '<svg style="animation: spin 1s linear infinite;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Sending...';
+
+            try {
+                const result = window.currentAnalysisResult;
+                
+                // Send alert via API
+                const alertResponse = await fetch('/api/send-alert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        analysis_id: result.analysis_id,
+                        patient_id: result.patient_id,
+                        recipient_id: selectedDoctorId,
+                        confidence: result.confidence,
+                        curb_score: result.curb_score.score
+                    })
+                });
+
+                if (!alertResponse.ok) {
+                    throw new Error('Failed to send alert');
+                }
+
+                const alertResult = await alertResponse.json();
+                if (alertResult.success) {
+                    document.getElementById('alertDoctorModal').classList.remove('active');
+                    alert(`✓ Alert sent (${alertResult.notification.urgency_level} priority)\n\nDoctor has been notified about this critical case.`);
+                    document.getElementById('sendAlertBtn').disabled = true;
+                    document.getElementById('sendAlertBtn').style.opacity = '0.6';
+                } else {
+                    alert('Error sending alert: ' + (alertResult.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error sending alert:', error);
+                alert('Failed to send alert. Please try again.');
+            } finally {
+                this.innerHTML = buttonText;
+                this.disabled = !selectedDoctorId;
+            }
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('alertDoctorModal');
+            if (event.target === modal) {
+                modal.classList.remove('active');
+                selectedDoctorId = null;
+            }
+        });
+
+        // Load current user information
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    const user = result.user;
+                    
+                    // Update user avatar (initials)
+                    const names = user.name.split(' ');
+                    const initials = names.map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('userAvatarInitials').textContent = initials;
+                    
+                    // Update user details
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('userEmail').textContent = user.email;
+                    currentUserNameCache = user.name;
+                    const userRoleElement = document.getElementById('userRole'); userRoleElement.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1); userRoleElement.className = `user-role role-${user.role}`;
+                    
+
+                } else {
+                    // Not logged in, redirect to login
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        // Clear all patient data from sessionStorage for security/privacy
+                        sessionStorage.removeItem('patient_name');
+                        sessionStorage.removeItem('patient_age');
+                        sessionStorage.removeItem('patient_medical_id');
+                        sessionStorage.removeItem('analysis_result');
+                        sessionStorage.removeItem('currentAnalysisId');
+                        
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error logging out. Please try again.');
+                }
+            }
+        });
+
+        // Load user info on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+        });
+
+        // ========== THEME TOGGLE ==========
+        (function() {
+            const html = document.documentElement;
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+            
+            // Load saved theme or default to light
+            function loadTheme() {
+                const saved = localStorage.getItem('theme_preference') || 'light';
+                applyTheme(saved);
+            }
+            
+            function applyTheme(theme) {
+                body.setAttribute('data-theme', theme);
+                localStorage.setItem('theme_preference', theme);
+                updateToggleButton(theme);
+            }
+            
+            function updateToggleButton(theme) {
+                if (themeToggle) {
+                    const moonIcon = themeToggle.querySelector('.icon-moon');
+                    const sunIcon = themeToggle.querySelector('.icon-sun');
+                    if (theme === 'dark') {
+                        if (moonIcon) moonIcon.style.display = 'none';
+                        if (sunIcon) sunIcon.style.display = 'block';
+                        themeToggle.classList.add('dark-mode');
+                        themeToggle.classList.remove('light-mode');
+                    } else {
+                        if (moonIcon) moonIcon.style.display = 'block';
+                        if (sunIcon) sunIcon.style.display = 'none';
+                        themeToggle.classList.add('light-mode');
+                        themeToggle.classList.remove('dark-mode');
+                    }
+                }
+            }
+            
+            // Toggle theme on button click
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const current = body.getAttribute('data-theme') || 'light';
+                    const newTheme = current === 'light' ? 'dark' : 'light';
+                    applyTheme(newTheme);
+                });
+            }
+            
+            // Load theme on page load
+            loadTheme();
+        })();
+    </script>
+</body>
+</html>

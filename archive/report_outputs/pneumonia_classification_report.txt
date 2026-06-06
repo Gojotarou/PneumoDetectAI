@@ -1,0 +1,26 @@
+Pneumonia Classification Report
+========================================
+
+Label Mapping
+-------------
+  0 -> NORMAL
+  1 -> PNEUMONIA
+
+Classification Report
+---------------------
+              precision    recall  f1-score   support
+
+      NORMAL     0.9704    0.7009    0.8139       234
+   PNEUMONIA     0.8462    0.9872    0.9112       390
+
+    accuracy                         0.8798       624
+   macro avg     0.9083    0.8440    0.8626       624
+weighted avg     0.8928    0.8798    0.8747       624
+
+Overall Accuracy: 0.8798
+
+Formula to calculate:
+Precision = TP / (TP + FP)
+Recall = TP / (TP + FN)
+F1-score = 2 × (Precision × Recall) / (Precision + Recall)
+Support = number of true samples in that class

@@ -1,0 +1,3186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management - PneumoDetect AI</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <style>
+        .tabs-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e5f0;
+        }
+
+        .tab-btn {
+            padding: 12px 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            color: #667eea;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-responsive {
+            background: white;
+            border-radius: 8px;
+            overflow: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead tr {
+            background: #f5f7fa;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #e0e5f0;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e5f0;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-delete {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #ff5252;
+        }
+
+        .badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-doctor {
+            background: #d3e9f7;
+            color: #0066cc;
+        }
+
+        .badge-nurse {
+            background: #e8d5f2;
+            color: #6b21a8;
+        }
+
+        .badge-admin {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        /* Action Buttons in Tables */
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-delete {
+            background: #ffe0e0;
+            color: #d32f2f;
+        }
+
+        .btn-delete:hover {
+            background: #ffcccc;
+            transform: scale(1.05);
+        }
+
+        .btn-delete:active {
+            transform: scale(0.98);
+        }
+
+        .btn-action svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 15px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #667eea;
+            color: #667eea;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .info-icon:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #2c3e50;
+            margin-top: 8px;
+        }
+
+        .modal-body {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .modal-body strong {
+            color: #2c3e50;
+        }
+
+        .status-active {
+            color: #27ae60;
+        }
+
+        .status-inactive {
+            color: #e74c3c;
+        }
+
+        /* Add User Form Styles */
+        .add-user-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .form-header {
+            margin-bottom: 32px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 24px;
+        }
+
+        .form-header h2 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .add-user-form {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .form-section {
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .form-section legend {
+            font-size: 15px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e9ecef;
+            display: block;
+            width: 100%;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="password"],
+        .form-group select {
+            padding: 12px 16px;
+            border: 2px solid #e0e5f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #fff;
+            color: #2c3e50;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="email"]:focus,
+        .form-group input[type="password"]:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #f9fafb;
+        }
+
+        .form-group input:invalid:not(:placeholder-shown),
+        .form-group select:invalid:not(:placeholder-shown) {
+            border-color: #e74c3c;
+        }
+
+        .form-group input:valid:not(:placeholder-shown):not([type="password"]),
+        .form-group select:valid:not(:placeholder-shown) {
+            border-color: #27ae60;
+            background: #f0fdf4;
+        }
+
+        .password-hint {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        /* Password Input Wrapper and Toggle */
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-input-wrapper input[type="password"],
+        .password-input-wrapper input[type="text"] {
+            padding-right: 48px;
+            width: 100%;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            color: #95a5a6;
+            transition: all 0.2s ease;
+            width: 32px;
+            height: 32px;
+        }
+
+        .password-toggle:hover {
+            color: #667eea;
+        }
+
+        .password-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .password-toggle .icon-eye,
+        .password-toggle .icon-eye-off {
+            transition: all 0.2s ease;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 6px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Role Selection Styles */
+        .role-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .role-option {
+            position: relative;
+        }
+
+        .role-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .role-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            border: 2px solid #e0e5f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        .role-option input[type="radio"]:checked + .role-label {
+            border-color: #667eea;
+            background: #f8f9ff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .role-label:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .role-icon {
+            font-size: 28px;
+            min-width: 32px;
+            width: 40px;
+            height: 40px;
+            color: #667eea;
+            flex-shrink: 0;
+        }
+
+        .role-option input[type="radio"]:checked + .role-label .role-icon {
+            color: #667eea;
+        }
+
+        .role-option:hover .role-label .role-icon {
+            color: #667eea;
+        }
+
+        .role-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .role-info strong {
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .role-info small {
+            color: #95a5a6;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        /* Form Actions */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn-submit,
+        .btn-reset {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-reset {
+            background: #f0f0f0;
+            color: #667eea;
+            border: 2px solid #e0e5f0;
+        }
+
+        .btn-reset:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Form Messages */
+        .form-message {
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 16px;
+            border-left: 4px solid;
+        }
+
+        .form-message.success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #28a745;
+            display: block;
+        }
+
+        .form-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #e74c3c;
+            display: block;
+        }
+
+        /* Popup Modal Styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .popup-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .popup-icon {
+            width: 60px;
+            height: 60px;
+            background: #28a745;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 20px;
+            animation: popScale 0.5s ease-out;
+        }
+
+        @keyframes popScale {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .popup-modal h2 {
+            color: #333;
+            font-size: 20px;
+            margin: 15px 0 10px;
+        }
+
+        .popup-modal p {
+            color: #666;
+            font-size: 14px;
+            margin: 0 0 20px;
+            line-height: 1.5;
+        }
+
+        .popup-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-weight: 600;
+        }
+
+        .popup-btn:hover {
+            background: #218838;
+        }
+
+        .popup-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* ========== FILTER PANEL STYLES ========== */
+        .filter-panel {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .filter-header:hover {
+            background: #f0f2f5;
+        }
+
+        .filter-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #667eea;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+
+        .filter-toggle-btn.collapsed {
+            transform: rotate(-180deg);
+        }
+
+        .filter-content {
+            padding: 20px;
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+            opacity: 1;
+        }
+
+        .filter-content.collapsed {
+            max-height: 0;
+            padding: 0 20px;
+            opacity: 0;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+            color: #2c3e50;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #f9fafb;
+        }
+
+        .filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .btn-reset-filters {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reset-filters:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .btn-export-csv { padding: 8px 16px; background: #667eea; border: 1px solid #667eea; border-radius: 6px; color: white; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-export-csv:hover { background: #5568d3; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3); }
+        body[data-theme="dark"] .btn-export-csv { background: #667eea; color: white; }
+        body[data-theme="dark"] .btn-export-csv:hover { background: #5568d3; box-shadow: 0 2px 6px rgba(102, 126, 234, 0.5); }
+
+        /* Checkbox visibility - hidden by default, shown in selection mode */
+        .table-responsive table th:first-child,
+        .table-responsive table td:first-child {
+            display: none;
+        }
+
+        .table-responsive.show-checkboxes table th:first-child,
+        .table-responsive.show-checkboxes table td:first-child {
+            display: table-cell;
+        }
+
+        /* Elegant row highlighting in selection mode */
+        .table-responsive.show-checkboxes tbody tr {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .table-responsive.show-checkboxes tbody tr:hover {
+            background: #f0f4ff;
+        }
+
+        body[data-theme="dark"] .table-responsive.show-checkboxes tbody tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        /* Left border highlight for selected rows */
+        .table-responsive.show-checkboxes tbody tr:has(input[type="checkbox"]:checked) {
+            border-left: 4px solid #3498db;
+            background: #f9fbff;
+        }
+
+        body[data-theme="dark"] .table-responsive.show-checkboxes tbody tr:has(input[type="checkbox"]:checked) {
+            border-left: 4px solid #667eea;
+            background: rgba(102, 126, 234, 0.15);
+        }
+
+        /* Select Multiple button styling */
+        .btn-select-multiple { 
+            padding: 8px 14px; 
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 13px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            box-shadow: 0 2px 6px rgba(52, 152, 219, 0.2); 
+            margin-bottom: 16px; 
+        }
+        .btn-select-multiple:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3); 
+        }
+        body[data-theme="dark"] .btn-select-multiple { 
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); 
+            color: white; 
+        }
+        body[data-theme="dark"] .btn-select-multiple:hover { 
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4); 
+        }
+
+        /* DARK MODE FOR FILTER PANEL */
+        body[data-theme="dark"] .filter-panel {
+            background: #2a2e3e;
+            border-color: #444;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        body[data-theme="dark"] .filter-header {
+            background: #35394a;
+            border-bottom-color: #444;
+        }
+
+        body[data-theme="dark"] .filter-header:hover {
+            background: #3f4455;
+        }
+
+        body[data-theme="dark"] .filter-header h3 {
+            color: #e0e5f0;
+        }
+
+        body[data-theme="dark"] .filter-group label {
+            color: #9db4d4;
+        }
+
+        body[data-theme="dark"] .filter-group input,
+        body[data-theme="dark"] .filter-group select {
+            background: #3a3e50;
+            color: #e0e5f0;
+            border-color: #444;
+        }
+
+        body[data-theme="dark"] .filter-group input:focus,
+        body[data-theme="dark"] .filter-group select:focus {
+            background: #424a60;
+            border-color: #667eea;
+        }
+
+        body[data-theme="dark"] .filter-actions {
+            border-top-color: #444;
+        }
+
+        body[data-theme="dark"] .btn-reset-filters {
+            background: #3a3e50;
+            border-color: #444;
+            color: #9db4d4;
+        }
+
+        body[data-theme="dark"] .btn-reset-filters:hover {
+            background: #444;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* ========== STATUS BADGE STYLES ========== */
+        .status-active {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .status-inactive {
+            color: #e74c3c;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        body[data-theme="dark"] .status-active {
+            color: #2ecc71;
+        }
+
+        body[data-theme="dark"] .status-inactive {
+            color: #e67e22;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .add-user-card {
+                padding: 24px;
+            }
+
+            .role-selection {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn-submit,
+            .btn-reset {
+                width: 100%;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ========== BULK ACTIONS & PAGINATION ========== */
+        .bulk-actions-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f0f4ff;
+            border: 1px solid #e0e5f0;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #667eea;
+        }
+
+        .bulk-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .bulk-info input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-bulk-action {
+            padding: 8px 14px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-bulk-action:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-bulk-action.btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        .btn-bulk-action.btn-secondary:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .pagination-info {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .pagination-info select {
+            padding: 6px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+            color: #2c3e50;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-btn {
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-numbers {
+            display: flex;
+            gap: 4px;
+            margin: 0 8px;
+        }
+
+        .page-number {
+            padding: 6px 10px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            color: #667eea;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .page-number:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .page-number.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Dark mode for bulk actions & pagination */
+        body[data-theme="dark"] .bulk-actions-toolbar {
+            background: #35394a;
+            border-color: #444;
+            border-left-color: #667eea;
+        }
+
+        body[data-theme="dark"] .bulk-info {
+            color: #e0e5f0;
+        }
+
+        body[data-theme="dark"] .pagination-controls {
+            background: #2a2e3e;
+            border-color: #444;
+        }
+
+        body[data-theme="dark"] .pagination-info {
+            color: #9db4d4;
+        }
+
+        body[data-theme="dark"] .pagination-info select {
+            background: #3a3e50;
+            color: #e0e5f0;
+            border-color: #444;
+        }
+
+        body[data-theme="dark"] .pagination-btn,
+        body[data-theme="dark"] .page-number {
+            background: #3a3e50;
+            border-color: #444;
+            color: #9db4d4;
+        }
+
+        body[data-theme="dark"] .pagination-btn:hover:not(:disabled),
+        body[data-theme="dark"] .page-number:hover {
+            background: #444;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        body[data-theme="dark"] .page-number.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Table row checkboxes */
+        table tbody tr:has(input[type="checkbox"]:checked) {
+            background-color: #f0f4ff;
+        }
+
+        body[data-theme="dark"] table tbody tr:has(input[type="checkbox"]:checked) {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        table tbody input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+    </style>
+</head>
+<body data-theme="light" class="mobile-nav-enabled">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebarNav">
+            <div class="logo">
+                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+                <div class="logo-text">
+                    <h2>PneumoDetect</h2>
+                    <p>AI Platform</p>
+                </div>
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-icon lucide-moon icon-moon"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-medium-icon lucide-sun-medium icon-sun" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 3v1"/><path d="M12 20v1"/><path d="M3 12h1"/><path d="M20 12h1"/><path d="m18.364 5.636-.707.707"/><path d="m6.343 17.657-.707.707"/><path d="m5.636 5.636.707.707"/><path d="m17.657 17.657.707.707"/></svg>
+                </button>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span>Dashboard</a>
+                {% if current_user.role in ['doctor', 'nurse'] %}
+                    <a href="{{ url_for('new_analysis') }}" {% if request.endpoint == 'new_analysis' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg></span>New Analysis</a>
+                {% endif %}
+                <a href="{{ url_for('report') }}" {% if request.endpoint == 'report' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>Patient History</a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('management') }}" {% if request.endpoint == 'management' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m14.305 16.53.923-.382"/><path d="m15.228 13.852-.923-.383"/><path d="m16.852 12.228-.383-.923"/><path d="m16.852 17.772-.383.924"/><path d="m19.148 12.228.383-.923"/><path d="m19.53 18.696-.382-.924"/><path d="m20.772 13.852.924-.383"/><path d="m20.772 16.148.924.383"/><circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/></svg></span>Management</a>
+                {% endif %}
+                <a href="{{ url_for('analytics') }}" {% if request.endpoint == 'analytics' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="3" y2="20"/><line x1="21" y1="20" x2="3" y2="20"/><line x1="7" y1="15" x2="7" y2="20"/><line x1="12" y1="10" x2="12" y2="20"/><line x1="17" y1="5" x2="17" y2="20"/></svg></span>Analytics</a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('staff_performance') }}" {% if request.endpoint == 'staff_performance' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Staff Performance</a>
+                {% endif %}
+                {% if current_user.role != 'admin' %}
+                <a href="{{ url_for('alerts') }}" {% if request.endpoint == 'alerts' %}class="active"{% endif %}><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>Alerts</a>
+                {% endif %}
+            </nav>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatarInitials">--</div>
+                <div class="user-details">
+                    <h3 id="currentUserName">Loading...</h3>
+                    <p id="currentUserEmail">...</p>
+                    <span id="userRole" class="user-role">--</span>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </aside>
+
+        <button class="mobile-nav-overlay" id="mobileNavOverlay" aria-label="Close menu"></button>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="mobile-nav-bar">
+                <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebarNav">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="mobile-nav-title">PneumoDetect</div>
+            </div>
+
+            <div class="top-header">
+                <div>
+                    <h1>System Management</h1>
+                    <p>Manage staff assignments and patient allocations</p>
+                </div>
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Statistics -->
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="stat-label">Total Staff <span class="info-icon" title="Total number of staff members (doctors, nurses, admins) in the system">i</span></div>
+                        <div class="stat-number" id="total-users">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Total Patients <span class="info-icon" title="Total number of patients registered in the system">i</span></div>
+                        <div class="stat-number" id="total-patients">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Active Assignments <span class="info-icon" title="Number of unique patients with at least one staff assignment">i</span></div>
+                        <div class="stat-number" id="total-assignments">-</div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs-container">
+                    <button class="tab-btn active" onclick="switchTab('assignments')">Patient Assignments</button>
+                    <button class="tab-btn" onclick="switchTab('users')">Staff Users</button>
+                    <button class="tab-btn" onclick="switchTab('add-user')">Add New User</button>
+                </div>
+
+                <!-- Patient Assignments Tab -->
+                <div id="assignments" class="tab-content active">
+                    <!-- Assignment Form -->
+                    <div class="card">
+                        <div class="form-header">
+                            <h2>Create New Assignment</h2>
+                            <p>Assign patients to doctors and nurses</p>
+                        </div>
+                        <div style="padding: 20px; background: #f8f9fa; margin-bottom: 20px; border-radius: 8px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; align-items: end;">
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 6px; font-weight: 600;">Patient</label>
+                                    <select id="assignPatientSelect" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                                        <option value="">Select patient...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 6px; font-weight: 600;">Staff Member</label>
+                                    <select id="assignStaffSelect" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                                        <option value="">Select staff...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 6px; font-weight: 600;">Role</label>
+                                    <select id="assignRoleSelect" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                                        <option value="primary_doctor">Primary Doctor</option>
+                                        <option value="secondary_doctor">Secondary Doctor</option>
+                                        <option value="assigned_nurse">Assigned Nurse</option>
+                                    </select>
+                                </div>
+                                <button id="createAssignmentBtn" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+                                    + Assign
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assignments List -->
+                    <div class="card">
+                        <div class="form-header">
+                            <h2>Current Assignments</h2>
+                            <p id="total-assignments">0 assignments</p>
+                        </div>
+
+                        <!-- Assignments Filter Panel -->
+                        <div class="filter-panel">
+                            <div class="filter-header" onclick="toggleFilterPanel(this)">
+                                <h3><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 8px; vertical-align: middle;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>Filter Assignments</h3>
+                                <button class="filter-toggle-btn" title="Toggle filters">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+                                </button>
+                            </div>
+                            <div class="filter-content collapsed">
+                                <div class="filter-grid">
+                                    <div class="filter-group">
+                                        <label for="assignmentPatientSearch">Patient Name / ID</label>
+                                        <input type="text" id="assignmentPatientSearch" placeholder="Search patient..." onkeyup="filterAssignments()">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="assignmentStaffSearch">Staff Name</label>
+                                        <input type="text" id="assignmentStaffSearch" placeholder="Search staff..." onkeyup="filterAssignments()">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="assignmentRoleFilter">Role Type</label>
+                                        <select id="assignmentRoleFilter" onchange="filterAssignments()">
+                                            <option value="">All Roles</option>
+                                            <option value="primary_doctor">Primary Doctor</option>
+                                            <option value="secondary_doctor">Secondary Doctor</option>
+                                            <option value="assigned_nurse">Assigned Nurse</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="filter-actions">
+                                    <button class="btn-reset-filters" onclick="resetAssignmentFilters()">↻ Reset Filters</button>
+                                    <button class="btn-export-csv" onclick="exportAssignmentsToCSV()" title="Export filtered assignments as CSV">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 6px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        Export CSV
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bulk Actions Toolbar -->
+                        <div id="assignments-bulk-toolbar" class="bulk-actions-toolbar" style="display: none;">
+                            <div class="bulk-info">
+                                <input type="checkbox" id="assignmentsSelectAll" onchange="toggleAssignmentsSelectAll()" title="Select all">
+                                <span id="assignmentsSelectedCount">0 selected</span>
+                            </div>
+                            <div class="bulk-actions">
+                                <button class="btn-bulk-action" onclick="bulkDeleteAssignments()" title="Delete selected">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                    Delete Selected
+                                </button>
+                                <button class="btn-bulk-action btn-secondary" onclick="cancelAssignmentsBulkAction()">Cancel</button>
+                            </div>
+                        </div>
+
+                        <button id="assignmentsSelectMultipleBtn" class="btn-select-multiple" onclick="toggleAssignmentsSelectionMode()">Select Multiple</button>
+
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;"><input type="checkbox" id="assignmentsCheckAll" onchange="toggleAssignmentsCheckAll()"></th>
+                                        <th>Patient Name</th>
+                                        <th>Medical ID</th>
+                                        <th>Assigned Staff</th>
+                                        <th>Role Type</th>
+                                        <th>Assigned By</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assignments-table">
+                                    <tr>
+                                        <td colspan="7" class="empty-state">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <div class="pagination-controls">
+                            <div class="pagination-info">
+                                <span id="assignmentsPageInfo">Showing 0 records</span>
+                                <select id="assignmentsPageSize" onchange="changeAssignmentsPageSize()" style="margin-left: 16px;">
+                                    <option value="10" selected>10 per page</option>
+                                    <option value="25">25 per page</option>
+                                    <option value="50">50 per page</option>
+                                </select>
+                            </div>
+                            <div class="pagination-buttons">
+                                <button class="pagination-btn" id="assignmentsPrevBtn" onclick="prevAssignmentsPage()">← Previous</button>
+                                <span id="assignmentsPageNumbers" class="page-numbers"></span>
+                                <button class="pagination-btn" id="assignmentsNextBtn" onclick="nextAssignmentsPage()">Next →</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Staff Users Tab -->
+                <div id="users" class="tab-content">
+                    <div class="card">
+                        <!-- Staff Users Filter Panel -->
+                        <div class="filter-panel">
+                            <div class="filter-header" onclick="toggleFilterPanel(this)">
+                                <h3><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 8px; vertical-align: middle;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>Filter Staff Users</h3>
+                                <button class="filter-toggle-btn" title="Toggle filters">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+                                </button>
+                            </div>
+                            <div class="filter-content collapsed">
+                                <div class="filter-grid">
+                                    <div class="filter-group">
+                                        <label for="userNameSearch">Name / Email</label>
+                                        <input type="text" id="userNameSearch" placeholder="Search name or email..." onkeyup="filterUsers()">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="userRoleFilter">Role</label>
+                                        <select id="userRoleFilter" onchange="filterUsers()">
+                                            <option value="">All Roles</option>
+                                            <option value="doctor">Doctor</option>
+                                            <option value="nurse">Nurse</option>
+                                            <option value="admin">Admin</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="userDepartmentFilter">Department</label>
+                                        <select id="userDepartmentFilter" onchange="filterUsers()">
+                                            <option value="">All Departments</option>
+                                            <option value="Radiology">Radiology</option>
+                                            <option value="Pulmonology">Pulmonology</option>
+                                            <option value="Internal Medicine">Internal Medicine</option>
+                                            <option value="Emergency">Emergency</option>
+                                            <option value="ICU">ICU</option>
+                                            <option value="General Ward">General Ward</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="userStatusFilter">Status</label>
+                                        <select id="userStatusFilter" onchange="filterUsers()">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="filter-actions">
+                                    <button class="btn-reset-filters" onclick="resetUserFilters()">↻ Reset Filters</button>
+                                    <button class="btn-export-csv" onclick="exportUsersToCSV()" title="Export filtered users as CSV">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 6px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        Export CSV
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bulk Actions Toolbar -->
+                        <div id="users-bulk-toolbar" class="bulk-actions-toolbar" style="display: none;">
+                            <div class="bulk-info">
+                                <input type="checkbox" id="usersSelectAll" onchange="toggleUsersSelectAll()" title="Select all">
+                                <span id="usersSelectedCount">0 selected</span>
+                            </div>
+                            <div class="bulk-actions">
+                                <button class="btn-bulk-action" onclick="bulkDeleteUsers()" title="Delete selected">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                    Delete Selected
+                                </button>
+                                <button class="btn-bulk-action btn-secondary" onclick="cancelUsersBulkAction()">Cancel</button>
+                            </div>
+                        </div>
+
+                        <button id="usersSelectMultipleBtn" class="btn-select-multiple" onclick="toggleUsersSelectionMode()">Select Multiple</button>
+
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;"><input type="checkbox" id="usersCheckAll" onchange="toggleUsersCheckAll()"></th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table">
+                                    <tr>
+                                        <td colspan="7" class="empty-state">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <div class="pagination-controls">
+                            <div class="pagination-info">
+                                <span id="usersPageInfo">Showing 0 records</span>
+                                <select id="usersPageSize" onchange="changeUsersPageSize()" style="margin-left: 16px;">
+                                    <option value="10" selected>10 per page</option>
+                                    <option value="25">25 per page</option>
+                                    <option value="50">50 per page</option>
+                                </select>
+                            </div>
+                            <div class="pagination-buttons">
+                                <button class="pagination-btn" id="usersPrevBtn" onclick="prevUsersPage()">← Previous</button>
+                                <span id="usersPageNumbers" class="page-numbers"></span>
+                                <button class="pagination-btn" id="usersNextBtn" onclick="nextUsersPage()">Next →</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add New User Tab -->
+                <div id="add-user" class="tab-content">
+                    <div class="card add-user-card">
+                        <div class="form-header">
+                            <h2>Add New Staff Member</h2>
+                            <p>Create a new user account for hospital staff (Doctor, Nurse, or Admin)</p>
+                        </div>
+
+                        <form id="addUserForm" class="add-user-form">
+                            <!-- Personal Information Section -->
+                            <fieldset class="form-section">
+                                <legend>Personal Information</legend>
+                                
+                                <div class="form-group">
+                                    <label for="userName">Full Name *</label>
+                                    <input type="text" id="userName" name="name" required 
+                                           placeholder="e.g., Dr. Sarah Johnson"
+                                           minlength="2" maxlength="255">
+                                    <span class="error-message" id="nameError"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="userEmail">Email Address *</label>
+                                    <input type="email" id="userEmail" name="email" required 
+                                           placeholder="e.g., sarah.johnson@hospital.com"
+                                           maxlength="255">
+                                    <span class="error-message" id="emailError"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="userDepartment">Department (Optional)</label>
+                                    <select id="userDepartment" name="department">
+                                        <option value="">-- Select Department --</option>
+                                        <option value="Radiology">Radiology</option>
+                                        <option value="Pulmonology">Pulmonology</option>
+                                        <option value="Internal Medicine">Internal Medicine</option>
+                                        <option value="Emergency">Emergency</option>
+                                        <option value="ICU">Intensive Care Unit</option>
+                                        <option value="General Ward">General Ward</option>
+                                        <option value="Administration">Administration</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </fieldset>
+
+                            <!-- Role Selection Section -->
+                            <fieldset class="form-section">
+                                <legend>User Role & Permissions *</legend>
+                                
+                                <div class="role-selection">
+                                    <div class="role-option">
+                                        <input type="radio" id="roleDoctor" name="role" value="doctor" checked>
+                                        <label for="roleDoctor" class="role-label">
+                                            <svg class="role-icon" viewBox="0 0 1024 1024" fill="none" stroke="currentColor" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+                                                <!-- Head / hair -->
+                                                <path d="M336.6 332.6V134.7c0-13.3 7.9-25.5 20-31C386.9 90 447 67 510.3 67c63.1 0 119.8 22.8 148 36.5 11.7 5.6 19.2 17.7 19.2 30.7v198.4H336.6z"></path>
+                                                <!-- Face -->
+                                                <path d="M351.6 332.6v51.3c0 38.8 15.2 75.4 42.9 103.1 27.7 27.7 64.3 42.9 103.1 42.9h18.9c38.8 0 75.4-15.2 103.1-42.9 27.7-27.7 42.9-64.3 42.9-103.1v-51.3"></path>
+                                                <!-- Body -->
+                                                <path d="M510.3 581.6c-208.1 0-318.5 173.4-318.5 387.4h636.9c0-214-110.4-387.4-318.4-387.4z"></path>
+                                                <!-- Neck buttons -->
+                                                <circle cx="513.4" cy="801.2" r="14"></circle>
+                                                <circle cx="513.4" cy="889.3" r="14"></circle>
+                                                <!-- Stethoscope / chest detail -->
+                                                <path d="M513.4 692.6c-49 0-88.9-39.9-88.9-88.9"></path>
+                                                <path d="M513.4 692.6c49 0 88.9-39.9 88.9-88.9"></path>
+                                                <!-- Pocket -->
+                                                <path d="M589 726h114.2v90.2c0 13.2-10.8 24-24 24H613c-13.2 0-24-10.8-24-24V726z"></path>
+                                                <!-- Pocket top curve -->
+                                                <path d="M607.1 711.5c0-11.9 9.7-21.5 21.5-21.5s21.5 9.7 21.5 21.5"></path>
+                                                <!-- Arm curve -->
+                                                <path d="M562.3 763.7c-29.1 0-52.8-23.7-52.8-52.8"></path>
+                                                <!-- Medical cross -->
+                                                <line x1="510" y1="210" x2="510" y2="260"></line>
+                                                <line x1="485" y1="235" x2="535" y2="235"></line>
+                                            </svg>
+                                            <span class="role-info">
+                                                <strong>Doctor</strong>
+                                                <small>Can review analyses and add clinical notes</small>
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <div class="role-option">
+                                        <input type="radio" id="roleNurse" name="role" value="nurse">
+                                        <label for="roleNurse" class="role-label">
+                                            <svg class="role-icon" viewBox="0 0 1024 1024" fill="none" stroke="currentColor" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M334.1 96.9l14.9 155s41.3-92.3 159.5-91.8c133.7 0.6 176.7 138.5 176.7 138.5l19-201.6-370.1-0.1z"></path>
+                                                <path d="M508.8 169.9c44.1 0 85.6 17.2 116.8 48.4S674 290.9 674 335.1s-17.2 85.6-48.4 116.8-72.7 48.4-116.8 48.4S423.2 483 392 451.8s-48.4-72.7-48.4-116.8 17.2-85.6 48.4-116.8 72.7-48.3 116.8-48.3"></path>
+                                                <path d="M686.8 359.7l-11.6-25.6c-0.3-0.6-26.3-56.9-68.7-67.8-19.2-5-39.4 0.3-60 15.7-33.2 24.8-85.9 56-148.3 64.3-37.8 5-61.3-0.8-62.3-1.1l-5.1-1.3L302 66.5h413.6l-28.8 293.2z"></path>
+                                                <path d="M511.4 553.2c52.2 0 100 10.6 142 31.4 39.7 19.7 74.2 48.4 102.5 85.4 27.5 35.9 48.7 79.1 63.1 128.2 13 44.4 20.2 92.7 21.4 143.8H182.3c1.2-51.1 8.3-99.4 21.4-143.8 14.4-49.2 35.7-92.3 63.1-128.2 28.3-37 62.8-65.8 102.5-85.4 42.1-20.9 89.9-31.4 142.1-31.4"></path>
+                                                <path d="M456.4 665.5l-117.7-60.8 75.9-43.7 115.7 55.1-24.1 34.9"></path>
+                                                <path d="M566.9 665.5l118-60.9-75.9-43.7-115.7 55.1 24.1 34.9"></path>
+                                                <circle cx="455.2" cy="733.2" r="15.5"></circle>
+                                                <circle cx="574.5" cy="733.2" r="15.5"></circle>
+                                                <circle cx="450.6" cy="848" r="15.5"></circle>
+                                                <circle cx="569.9" cy="848" r="15.5"></circle>
+                                            </svg>
+                                            <span class="role-info">
+                                                <strong>Nurse</strong>
+                                                <small>Can upload X-rays and patient data securely</small>
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <div class="role-option">
+                                        <input type="radio" id="roleAdmin" name="role" value="admin">
+                                        <label for="roleAdmin" class="role-label">
+                                            <svg class="role-icon" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <!-- Head -->
+                                                <circle cx="14.68" cy="8.06" r="4.76"></circle>
+                                                <!-- Body -->
+                                                <path d="M4 30v-5.78a14.81 14.81 0 0 1 11.09-4.68"></path>
+                                                <!-- Gear (settings/admin) - Clean simple design -->
+                                                <circle cx="24" cy="24" r="6"></circle>
+                                                <circle cx="24" cy="24" r="2.5"></circle>
+                                                <path d="M24 16v2M24 34v-2M32 24h-2M16 24h2M30.2 30.2l-1.4-1.4M17.8 17.8l1.4 1.4M30.2 17.8l-1.4 1.4M17.8 30.2l1.4-1.4"></path>
+                                            </svg>
+                                            <span class="role-info">
+                                                <strong>Administrator</strong>
+                                                <small>Full system access - manage users & patient assignments</small>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <span class="error-message" id="roleError"></span>
+                            </fieldset>
+
+                            <!-- Security Section -->
+                            <fieldset class="form-section">
+                                <legend>Login Credentials</legend>
+                                
+                                <div class="form-group">
+                                    <label for="userPassword">Password *</label>
+                                    <div class="password-input-wrapper">
+                                        <input type="password" id="userPassword" name="password" required 
+                                               placeholder="Minimum 8 characters"
+                                               minlength="8" maxlength="255">
+                                        <button type="button" class="password-toggle" id="passwordToggle" title="Show/Hide Password">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-eye">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-eye-off" style="display:none;">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <span class="password-hint">Must be at least 8 characters long</span>
+                                    <span class="error-message" id="passwordError"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="userConfirmPassword">Confirm Password *</label>
+                                    <div class="password-input-wrapper">
+                                        <input type="password" id="userConfirmPassword" name="confirm_password" required 
+                                               placeholder="Re-enter password"
+                                               minlength="8" maxlength="255">
+                                        <button type="button" class="password-toggle" id="confirmPasswordToggle" title="Show/Hide Password">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-eye">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-eye-off" style="display:none;">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <span class="error-message" id="confirmPasswordError"></span>
+                                </div>
+                            </fieldset>
+
+                            <!-- Form Actions -->
+                            <div class="form-actions">
+                                <button type="submit" class="btn-submit" id="submitBtn">
+                                    <span>✓ Create User Account</span>
+                                </button>
+                                <button type="reset" class="btn-reset">
+                                    <span>↻ Clear Form</span>
+                                </button>
+                            </div>
+
+                            <!-- Success/Error Messages -->
+                            <div id="formMessage" class="form-message" style="display: none;"></div>
+                        </form>
+
+                        <!-- Success Popup Modal -->
+                        <div id="successPopup" class="popup-overlay" style="display: none;">
+                            <div class="popup-modal">
+                                <div class="popup-icon">Ã¢Å“â€œ</div>
+                                <h2 id="popupTitle">User Created Successfully!</h2>
+                                <p id="popupMessage">The user account has been created.</p>
+                                <button class="popup-btn" onclick="closePopup()">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="app-footer" aria-label="Application Footer">
+                <div class="app-footer-main">
+                    <div class="app-footer-col">
+                        <div class="app-footer-title">Contact Us</div>
+                        <div class="app-footer-support">
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.61a2 2 0 0 1-.45 2.11L8.03 9.91a16 16 0 0 0 6.06 6.06l1.47-1.25a2 2 0 0 1 2.11-.45c.84.29 1.71.5 2.61.62A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>+60 17-4151690</span>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+                                <a href="mailto:johannesric03@gmail.com">johannesric03@gmail.com</a>
+                            </div>
+                            <div class="app-footer-contact app-footer-contact-row app-footer-address">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <address>University of Malaysia Sarawak, Jln Datuk Mohammad Musa, 94300 Kota Samarahan, Sarawak, Malaysia</address>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-footer-bottom">
+                    <div class="app-footer-copy">
+                    For clinical support purposes only. Final diagnosis and treatment decisions remain the responsibility of licensed medical professionals.
+                    </div>
+                    <div class="app-footer-meta">
+                        <div>Version 1.0.0 | Last updated: <span class="last-updated-date"></span></div>
+                        <div>&copy; 2026 Johannes Eric Ramesh. All Rights Reserved.</div>
+                    </div>
+                </div>
+            </footer>
+
+            <script>
+                (function() {
+                    const lastUpdated = document.querySelector('.last-updated-date');
+                    if (lastUpdated) {
+                        lastUpdated.textContent = new Date().toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    }
+                })();
+            </script>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/mobile-nav.js') }}"></script>
+    <script>
+        window.initMobileNav?.({
+            breakpoint: 900,
+            bodyClass: 'mobile-nav-enabled',
+            openClass: 'nav-open',
+            toggleSelector: '#mobileNavToggle',
+            overlaySelector: '#mobileNavOverlay',
+            sidebarSelector: '#sidebarNav',
+            navLinksSelector: '#sidebarNav .nav-links a'
+        });
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load data for the tab
+            if (tabName === 'assignments') {
+                loadAssignments();
+            } else if (tabName === 'users') {
+                loadUsers();
+            }
+        }
+
+        // Animate numbers counting from 0 to target value
+        function animateCounter(element, targetValue, duration = 1500) {
+            if (!element) return;
+            
+            const startValue = 0;
+            const startTime = Date.now();
+            
+            function update() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation (ease-out)
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const currentValue = Math.floor(startValue + (targetValue - startValue) * easeProgress);
+                
+                element.textContent = currentValue;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            
+            update();
+        }
+
+        // ========== FILTERING FUNCTIONS ==========
+        let allAssignments = [];
+        let allUsers = [];
+        
+        // Pagination & Bulk Actions state
+        let assignmentsCurrentPage = 1;
+        let assignmentsPageSize = 10;
+        let assignmentsSelected = new Set();
+        let filteredAssignments = [];
+        let usersCurrentPage = 1;
+        let usersPageSize = 10;
+        let usersSelected = new Set();
+        let filteredUsers = [];
+
+        function toggleFilterPanel(headerElement) {
+            const content = headerElement.nextElementSibling;
+            const btn = headerElement.querySelector('.filter-toggle-btn');
+            content.classList.toggle('collapsed');
+            btn.classList.toggle('collapsed');
+        }
+
+        function filterAssignments() {
+            const patientSearch = document.getElementById('assignmentPatientSearch').value.toLowerCase();
+            const staffSearch = document.getElementById('assignmentStaffSearch').value.toLowerCase();
+            const roleFilter = document.getElementById('assignmentRoleFilter').value;
+
+            filteredAssignments = allAssignments.filter(assignment => {
+                const patientMatch = assignment.patient_name.toLowerCase().includes(patientSearch) || 
+                                   String(assignment.patient_id).toLowerCase().includes(patientSearch);
+                const staffMatch = assignment.staff_name.toLowerCase().includes(staffSearch);
+                const roleMatch = !roleFilter || assignment.role_type === roleFilter;
+
+                return patientMatch && staffMatch && roleMatch;
+            });
+
+            assignmentsCurrentPage = 1;
+            assignmentsSelected.clear();
+            document.getElementById('assignmentsCheckAll').checked = false;
+            document.getElementById('assignmentsSelectAll').checked = false;
+            document.getElementById('assignments-bulk-toolbar').style.display = 'none';
+
+            if (filteredAssignments.length === 0) {
+                const tbody = document.getElementById('assignments-table');
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No matching assignments</td></tr>';
+                document.getElementById('assignmentsPageInfo').textContent = 'Showing 0 records';
+                document.getElementById('assignmentsPageNumbers').innerHTML = '';
+                return;
+            }
+
+            displayPaginatedAssignments();
+        }
+
+        function resetAssignmentFilters() {
+            document.getElementById('assignmentPatientSearch').value = '';
+            document.getElementById('assignmentStaffSearch').value = '';
+            document.getElementById('assignmentRoleFilter').value = '';
+            
+            filteredAssignments = [...allAssignments];
+            assignmentsCurrentPage = 1;
+            assignmentsSelected.clear();
+            document.getElementById('assignmentsCheckAll').checked = false;
+            document.getElementById('assignmentsSelectAll').checked = false;
+            document.getElementById('assignments-bulk-toolbar').style.display = 'none';
+            
+            displayPaginatedAssignments();
+        }
+
+        function filterUsers() {
+            const nameSearch = document.getElementById('userNameSearch').value.toLowerCase();
+            const roleFilter = document.getElementById('userRoleFilter').value;
+            const departmentFilter = document.getElementById('userDepartmentFilter').value;
+            const statusFilter = document.getElementById('userStatusFilter').value;
+
+            filteredUsers = allUsers.filter(user => {
+                const nameMatch = user.name.toLowerCase().includes(nameSearch) || 
+                                user.email.toLowerCase().includes(nameSearch);
+                const roleMatch = !roleFilter || user.role === roleFilter;
+                const deptMatch = !departmentFilter || user.department === departmentFilter;
+                const statusMatch = !statusFilter || (statusFilter === 'active' ? user.is_active : !user.is_active);
+
+                return nameMatch && roleMatch && deptMatch && statusMatch;
+            });
+
+            usersCurrentPage = 1;
+            usersSelected.clear();
+            document.getElementById('usersCheckAll').checked = false;
+            document.getElementById('usersSelectAll').checked = false;
+            document.getElementById('users-bulk-toolbar').style.display = 'none';
+
+            if (filteredUsers.length === 0) {
+                const tbody = document.getElementById('users-table');
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No matching users</td></tr>';
+                document.getElementById('usersPageInfo').textContent = 'Showing 0 records';
+                document.getElementById('usersPageNumbers').innerHTML = '';
+                return;
+            }
+
+            displayPaginatedUsers();
+        }
+
+        function resetUserFilters() {
+            document.getElementById('userNameSearch').value = '';
+            document.getElementById('userRoleFilter').value = '';
+            document.getElementById('userDepartmentFilter').value = '';
+            document.getElementById('userStatusFilter').value = '';
+
+            filteredUsers = [...allUsers];
+            usersCurrentPage = 1;
+            usersSelected.clear();
+            document.getElementById('usersCheckAll').checked = false;
+            document.getElementById('usersSelectAll').checked = false;
+            document.getElementById('users-bulk-toolbar').style.display = 'none';
+            
+            displayPaginatedUsers();
+
+            allUsers.forEach(user => {
+                const row = document.createElement('tr');
+                const statusClass = user.is_active ? 'status-active' : 'status-inactive';
+                const statusText = user.is_active ? '✓ Active' : '✗ Inactive';
+                row.innerHTML = `
+                    <td><strong>${user.name}</strong></td>
+                    <td>${user.email}</td>
+                    <td><span class="badge ${user.role === 'doctor' ? 'badge-doctor' : user.role === 'nurse' ? 'badge-nurse' : 'badge-admin'}">${user.role}</span></td>
+                    <td>${user.department || '-'}</td>
+                    <td><span class="${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="btn-action btn-delete" onclick="deleteUser(${user.id}, '${user.name}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                            Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // ========== EXPORT FUNCTIONS ==========
+        function exportAssignmentsToCSV() {
+            if (filteredAssignments.length === 0) {
+                alert('No assignments to export. Please adjust your filters.');
+                return;
+            }
+
+            // Prepare CSV headers
+            const headers = ['Patient Name', 'Medical ID', 'Assigned Staff', 'Role Type', 'Assigned By'];
+            const rows = [];
+
+            // Add data rows
+            filteredAssignments.forEach(assignment => {
+                rows.push([
+                    assignment.patient_name || 'N/A',
+                    assignment.patient_id || 'N/A',
+                    assignment.staff_name || 'N/A',
+                    assignment.role_type || 'N/A',
+                    assignment.assigned_by || 'N/A'
+                ]);
+            });
+
+            // Create CSV content
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csvContent += row.map(field => {
+                    const fieldStr = String(field);
+                    if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+                        return '"' + fieldStr.replace(/"/g, '""') + '"';
+                    }
+                    return fieldStr;
+                }).join(',') + '\n';
+            });
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `patient_assignments_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportUsersToCSV() {
+            if (filteredUsers.length === 0) {
+                alert('No users to export. Please adjust your filters.');
+                return;
+            }
+
+            // Prepare CSV headers
+            const headers = ['Name', 'Email', 'Role', 'Department', 'Status'];
+            const rows = [];
+
+            // Add data rows
+            filteredUsers.forEach(user => {
+                const statusText = user.is_active ? 'Active' : 'Inactive';
+                rows.push([
+                    user.name || 'N/A',
+                    user.email || 'N/A',
+                    user.role || 'N/A',
+                    user.department || 'N/A',
+                    statusText
+                ]);
+            });
+
+            // Create CSV content
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csvContent += row.map(field => {
+                    const fieldStr = String(field);
+                    if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+                        return '"' + fieldStr.replace(/"/g, '""') + '"';
+                    }
+                    return fieldStr;
+                }).join(',') + '\n';
+            });
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `staff_users_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ========== BULK ACTIONS & PAGINATION ==========
+        function toggleAssignmentsCheckAll() {
+            const checkAll = document.getElementById('assignmentsCheckAll');
+            const checkboxes = document.querySelectorAll('#assignments-table input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = checkAll.checked);
+            updateAssignmentsSelection();
+        }
+
+        function toggleAssignmentsSelectAll() {
+            const selectAll = document.getElementById('assignmentsSelectAll');
+            const checkboxes = document.querySelectorAll('#assignments-table input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateAssignmentsSelection();
+        }
+
+        function updateAssignmentsSelection() {
+            const checkboxes = Array.from(document.querySelectorAll('#assignments-table input[type="checkbox"]'));
+            assignmentsSelected.clear();
+            checkboxes.forEach(cb => {
+                if (cb.checked) assignmentsSelected.add(cb.dataset.id);
+            });
+            
+            const toolbar = document.getElementById('assignments-bulk-toolbar');
+            const selectAllCb = document.getElementById('assignmentsSelectAll');
+            const checkAllCb = document.getElementById('assignmentsCheckAll');
+            
+            if (assignmentsSelected.size > 0) {
+                toolbar.style.display = 'flex';
+                document.getElementById('assignmentsSelectedCount').textContent = `${assignmentsSelected.size} selected`;
+                selectAllCb.checked = true;
+                checkAllCb.checked = true;
+            } else {
+                toolbar.style.display = 'none';
+                selectAllCb.checked = false;
+                checkAllCb.checked = false;
+            }
+        }
+
+        function cancelAssignmentsBulkAction() {
+            assignmentsSelected.clear();
+            document.querySelectorAll('#assignments-table input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('assignmentsSelectAll').checked = false;
+            document.getElementById('assignmentsCheckAll').checked = false;
+            document.getElementById('assignments-bulk-toolbar').style.display = 'none';
+        }
+
+        async function bulkDeleteAssignments() {
+            if (assignmentsSelected.size === 0) return;
+            if (!confirm(`Delete ${assignmentsSelected.size} assignment(s)?`)) return;
+
+            for (const id of assignmentsSelected) {
+                try {
+                    await fetch(`/api/assignments/${id}`, { method: 'DELETE' });
+                } catch (error) {
+                    console.error('Error deleting assignment:', error);
+                }
+            }
+            loadAssignments();
+        }
+
+        function changeAssignmentsPageSize() {
+            assignmentsPageSize = parseInt(document.getElementById('assignmentsPageSize').value);
+            assignmentsCurrentPage = 1;
+            displayPaginatedAssignments();
+        }
+
+        function displayPaginatedAssignments() {
+            const start = (assignmentsCurrentPage - 1) * assignmentsPageSize;
+            const end = start + assignmentsPageSize;
+            const pageData = filteredAssignments.slice(start, end);
+
+            const tbody = document.getElementById('assignments-table');
+            tbody.innerHTML = '';
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No assignments</td></tr>';
+                updateAssignmentsPagination();
+                return;
+            }
+
+            pageData.forEach((assignment, idx) => {
+                const row = document.createElement('tr');
+                const recordId = assignment.id || (start + idx);
+                row.innerHTML = `
+                    <td><input type="checkbox" data-id="${recordId}" onchange="updateAssignmentsSelection()"></td>
+                    <td><strong>${assignment.patient_name}</strong></td>
+                    <td>${assignment.patient_id}</td>
+                    <td>${assignment.staff_name}</td>
+                    <td><span class="badge ${assignment.role_type.includes('nurse') ? 'badge-nurse' : 'badge-doctor'}">${assignment.role_type.replace(/_/g, ' ')}</span></td>
+                    <td>${assignment.assigned_by}</td>
+                    <td>
+                        <button class="action-btn btn-delete" onclick="deleteAssignment(${recordId})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateAssignmentsPagination();
+        }
+
+        function updateAssignmentsPagination() {
+            const totalPages = Math.ceil(filteredAssignments.length / assignmentsPageSize);
+            const start = (assignmentsCurrentPage - 1) * assignmentsPageSize + 1;
+            const end = Math.min(assignmentsCurrentPage * assignmentsPageSize, filteredAssignments.length);
+
+            document.getElementById('assignmentsPageInfo').textContent = `Showing ${start}-${end} of ${filteredAssignments.length} records`;
+            document.getElementById('assignmentsPrevBtn').disabled = assignmentsCurrentPage === 1;
+            document.getElementById('assignmentsNextBtn').disabled = assignmentsCurrentPage === totalPages;
+
+            const pageNumbers = document.getElementById('assignmentsPageNumbers');
+            pageNumbers.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= assignmentsCurrentPage - 1 && i <= assignmentsCurrentPage + 1)) {
+                    const btn = document.createElement('button');
+                    btn.className = `page-number ${i === assignmentsCurrentPage ? 'active' : ''}`;
+                    btn.textContent = i;
+                    btn.onclick = () => goToAssignmentsPage(i);
+                    pageNumbers.appendChild(btn);
+                } else if (i === 2 || i === totalPages - 1) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    span.style.padding = '6px 4px';
+                    pageNumbers.appendChild(span);
+                }
+            }
+        }
+
+        function prevAssignmentsPage() {
+            if (assignmentsCurrentPage > 1) {
+                assignmentsCurrentPage--;
+                displayPaginatedAssignments();
+            }
+        }
+
+        function nextAssignmentsPage() {
+            const totalPages = Math.ceil(allAssignments.length / assignmentsPageSize);
+            if (assignmentsCurrentPage < totalPages) {
+                assignmentsCurrentPage++;
+                displayPaginatedAssignments();
+            }
+        }
+
+        function goToAssignmentsPage(page) {
+            assignmentsCurrentPage = page;
+            displayPaginatedAssignments();
+        }
+
+        function toggleUsersCheckAll() {
+            const checkAll = document.getElementById('usersCheckAll');
+            const checkboxes = document.querySelectorAll('#users-table input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = checkAll.checked);
+            updateUsersSelection();
+        }
+
+        function toggleUsersSelectAll() {
+            const selectAll = document.getElementById('usersSelectAll');
+            const checkboxes = document.querySelectorAll('#users-table input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateUsersSelection();
+        }
+
+        function updateUsersSelection() {
+            const checkboxes = Array.from(document.querySelectorAll('#users-table input[type="checkbox"]'));
+            usersSelected.clear();
+            checkboxes.forEach(cb => {
+                if (cb.checked) usersSelected.add(cb.dataset.id);
+            });
+            
+            const toolbar = document.getElementById('users-bulk-toolbar');
+            const selectAllCb = document.getElementById('usersSelectAll');
+            const checkAllCb = document.getElementById('usersCheckAll');
+            
+            if (usersSelected.size > 0) {
+                toolbar.style.display = 'flex';
+                document.getElementById('usersSelectedCount').textContent = `${usersSelected.size} selected`;
+                selectAllCb.checked = true;
+                checkAllCb.checked = true;
+            } else {
+                toolbar.style.display = 'none';
+                selectAllCb.checked = false;
+                checkAllCb.checked = false;
+            }
+        }
+
+        function cancelUsersBulkAction() {
+            usersSelected.clear();
+            document.querySelectorAll('#users-table input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('usersSelectAll').checked = false;
+            document.getElementById('usersCheckAll').checked = false;
+            document.getElementById('users-bulk-toolbar').style.display = 'none';
+        }
+
+        async function bulkDeleteUsers() {
+            if (usersSelected.size === 0) return;
+            if (!confirm(`Delete ${usersSelected.size} user(s)?`)) return;
+
+            for (const id of usersSelected) {
+                try {
+                    await fetch(`/api/users/${id}`, { method: 'DELETE' });
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                }
+            }
+            loadUsers();
+        }
+
+        function changeUsersPageSize() {
+            usersPageSize = parseInt(document.getElementById('usersPageSize').value);
+            usersCurrentPage = 1;
+            displayPaginatedUsers();
+        }
+
+        function displayPaginatedUsers() {
+            const start = (usersCurrentPage - 1) * usersPageSize;
+            const end = start + usersPageSize;
+            const pageData = filteredUsers.slice(start, end);
+
+            const tbody = document.getElementById('users-table');
+            tbody.innerHTML = '';
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No users</td></tr>';
+                updateUsersPagination();
+                return;
+            }
+
+            pageData.forEach((user, idx) => {
+                const row = document.createElement('tr');
+                const recordId = user.id || (start + idx);
+                const statusClass = user.is_active ? 'status-active' : 'status-inactive';
+                const statusText = user.is_active ? '✓ Active' : '✗ Inactive';
+                row.innerHTML = `
+                    <td><input type="checkbox" data-id="${recordId}" onchange="updateUsersSelection()"></td>
+                    <td><strong>${user.name}</strong></td>
+                    <td>${user.email}</td>
+                    <td><span class="badge ${user.role === 'doctor' ? 'badge-doctor' : user.role === 'nurse' ? 'badge-nurse' : 'badge-admin'}">${user.role}</span></td>
+                    <td>${user.department || '-'}</td>
+                    <td><span class="${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="btn-action btn-delete" onclick="deleteUser(${recordId}, '${user.name}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                            Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateUsersPagination();
+        }
+
+        function updateUsersPagination() {
+            const totalPages = Math.ceil(filteredUsers.length / usersPageSize);
+            const start = (usersCurrentPage - 1) * usersPageSize + 1;
+            const end = Math.min(usersCurrentPage * usersPageSize, filteredUsers.length);
+
+            document.getElementById('usersPageInfo').textContent = `Showing ${start}-${end} of ${filteredUsers.length} records`;
+            document.getElementById('usersPrevBtn').disabled = usersCurrentPage === 1;
+            document.getElementById('usersNextBtn').disabled = usersCurrentPage === totalPages;
+
+            const pageNumbers = document.getElementById('usersPageNumbers');
+            pageNumbers.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= usersCurrentPage - 1 && i <= usersCurrentPage + 1)) {
+                    const btn = document.createElement('button');
+                    btn.className = `page-number ${i === usersCurrentPage ? 'active' : ''}`;
+                    btn.textContent = i;
+                    btn.onclick = () => goToUsersPage(i);
+                    pageNumbers.appendChild(btn);
+                } else if (i === 2 || i === totalPages - 1) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    span.style.padding = '6px 4px';
+                    pageNumbers.appendChild(span);
+                }
+            }
+        }
+
+        function prevUsersPage() {
+            if (usersCurrentPage > 1) {
+                usersCurrentPage--;
+                displayPaginatedUsers();
+            }
+        }
+
+        function nextUsersPage() {
+            const totalPages = Math.ceil(allUsers.length / usersPageSize);
+            if (usersCurrentPage < totalPages) {
+                usersCurrentPage++;
+                displayPaginatedUsers();
+            }
+        }
+
+        function toggleAssignmentsSelectionMode() {
+            const btn = document.getElementById('assignmentsSelectMultipleBtn');
+            const tableContainer = btn.nextElementSibling;
+            
+            tableContainer.classList.toggle('show-checkboxes');
+            
+            if (tableContainer.classList.contains('show-checkboxes')) {
+                btn.textContent = 'Exit Selection Mode';
+            } else {
+                btn.textContent = 'Select Multiple';
+                cancelAssignmentsBulkAction();
+            }
+        }
+
+        function toggleUsersSelectionMode() {
+            const btn = document.getElementById('usersSelectMultipleBtn');
+            const tableContainer = btn.nextElementSibling;
+            
+            tableContainer.classList.toggle('show-checkboxes');
+            
+            if (tableContainer.classList.contains('show-checkboxes')) {
+                btn.textContent = 'Exit Selection Mode';
+            } else {
+                btn.textContent = 'Select Multiple';
+                cancelUsersBulkAction();
+            }
+        }
+
+        function goToUsersPage(page) {
+            usersCurrentPage = page;
+            displayPaginatedUsers();
+        }
+
+        async function loadAssignments() {
+            try {
+                const response = await fetch('/api/assignments');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store all assignments in global variable for filtering
+                    allAssignments = data.assignments;
+                    filteredAssignments = [...allAssignments];
+                    assignmentsCurrentPage = 1;
+                    assignmentsSelected.clear();
+                    
+                    // Reset pagination state
+                    document.getElementById('assignmentsCheckAll').checked = false;
+                    document.getElementById('assignmentsSelectAll').checked = false;
+                    document.getElementById('assignments-bulk-toolbar').style.display = 'none';
+
+                    if (allAssignments.length === 0) {
+                        const tbody = document.getElementById('assignments-table');
+                        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No assignments found</td></tr>';
+                        animateCounter(document.getElementById('total-assignments'), 0);
+                        return;
+                    }
+
+                    // Display paginated results
+                    displayPaginatedAssignments();
+
+                    // Count unique patients with assignments
+                    const uniquePatients = new Set(allAssignments.map(a => a.patient_id)).size;
+                    animateCounter(document.getElementById('total-assignments'), uniquePatients);
+                }
+            } catch (error) {
+                console.error('Error loading assignments:', error);
+                document.getElementById('assignments-table').innerHTML = '<tr><td colspan="7" class="empty-state">Error loading assignments</td></tr>';
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store all users in global variable for filtering
+                    allUsers = data.users;
+                    filteredUsers = [...allUsers];
+                    usersCurrentPage = 1;
+                    usersSelected.clear();
+                    
+                    // Reset pagination state
+                    document.getElementById('usersCheckAll').checked = false;
+                    document.getElementById('usersSelectAll').checked = false;
+                    document.getElementById('users-bulk-toolbar').style.display = 'none';
+
+                    if (allUsers.length === 0) {
+                        const tbody = document.getElementById('users-table');
+                        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No users found</td></tr>';
+                        animateCounter(document.getElementById('total-users'), 0);
+                        return;
+                    }
+
+                    // Display paginated results
+                    displayPaginatedUsers();
+
+                    animateCounter(document.getElementById('total-users'), allUsers.length);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('users-table').innerHTML = '<tr><td colspan="7" class="empty-state">Error loading users</td></tr>';
+            }
+        }
+
+        async function loadPatients() {
+            try {
+                const response = await fetch('/api/patients');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update the total patients count in the stats
+                    animateCounter(document.getElementById('total-patients'), data.patients.length);
+                } else {
+                    console.error('Failed to load patients:', data.error);
+                    animateCounter(document.getElementById('total-patients'), 0);
+                }
+            } catch (error) {
+                console.error('Error loading patients:', error);
+                animateCounter(document.getElementById('total-patients'), 0);
+            }
+        }
+
+        async function deleteUser(userId, userName) {
+            if (!confirm(`Are you sure you want to delete "${userName}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Show success message
+                    alert(`Ã¢Å“â€œ ${userName} has been deleted successfully`);
+                    loadUsers();
+                } else {
+                    alert(`Ã¢Å“â€” Error: ${data.error || 'Failed to delete user'}`);
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert(`Ã¢Å“â€” Error deleting user: ${error.message}`);
+            }
+        }
+
+        async function deleteAssignment(assignmentId) {
+            if (!confirm('Are you sure you want to remove this assignment?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/assignments/${assignmentId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Assignment removed successfully');
+                    loadAssignments();
+                } else {
+                    alert('Failed to remove assignment: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error deleting assignment:', error);
+                alert('Error removing assignment: ' + error.message);
+            }
+        }
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/current-user');
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    const user = result.user;
+                    
+                    // Update user avatar (initials)
+                    const names = user.name.split(' ');
+                    const initials = names.map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('userAvatarInitials').textContent = initials;
+                    
+                    // Update user details
+                    document.getElementById('currentUserName').textContent = user.name;
+                    document.getElementById('currentUserEmail').textContent = user.email;
+                    const userRoleElement = document.getElementById('userRole'); userRoleElement.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1); userRoleElement.className = `user-role role-${user.role}`;
+                    
+                    // Role-based access is enforced by Flask @role_required decorator
+                    // Navigation is now server-side rendered, no toggling needed
+                } else {
+                    // Not logged in, redirect to login
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        });
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, initializing...');
+            loadUserInfo();
+            loadAssignments();
+            loadAssignmentData();
+            loadUsers();
+            loadPatients();
+            setupAddUserForm();
+        });
+
+        // Also initialize when DOM is ready (earlier than window load)
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, setting up form...');
+            setupAddUserForm();
+            
+            // Check if URL has tab parameter and switch to it
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam) {
+                switchTab(tabParam);
+            }
+            
+
+        });
+
+        // Setup Add User Form
+        function setupAddUserForm() {
+            console.log('Setting up add user form...');
+            const form = document.getElementById('addUserForm');
+            console.log('Form element:', form);
+            
+            if (form) {
+                console.log('Form found, attaching event listener...');
+                form.addEventListener('submit', handleAddUserSubmit);
+                form.addEventListener('reset', clearFormErrors);
+                
+                // Add real-time validation
+                const userEmailEl = document.getElementById('userEmail');
+                const userPasswordEl = document.getElementById('userPassword');
+                const userConfirmPasswordEl = document.getElementById('userConfirmPassword');
+                const userNameEl = document.getElementById('userName');
+                
+                if (userEmailEl) userEmailEl.addEventListener('blur', validateEmail);
+                if (userPasswordEl) userPasswordEl.addEventListener('input', validatePassword);
+                if (userConfirmPasswordEl) userConfirmPasswordEl.addEventListener('input', validatePasswordMatch);
+                if (userNameEl) userNameEl.addEventListener('input', validateName);
+                
+                console.log('Validation event listeners attached');
+                
+                // Setup password visibility toggles
+                setupPasswordToggle('passwordToggle', 'userPassword');
+                setupPasswordToggle('confirmPasswordToggle', 'userConfirmPassword');
+                
+                // Add backup click handler to submit button
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn) {
+                    submitBtn.addEventListener('click', function(e) {
+                        console.log('Submit button clicked');
+                        // The form's submit event should fire, but this is a backup
+                        if (!form.checkValidity()) {
+                            console.log('Form has HTML5 validation errors');
+                        }
+                    });
+                }
+                
+                console.log('Form setup complete');
+            } else {
+                console.error('Form element not found!');
+            }
+        }
+
+        // Setup Password Toggle Functionality
+        function setupPasswordToggle(toggleId, inputId) {
+            const toggleBtn = document.getElementById(toggleId);
+            const passwordInput = document.getElementById(inputId);
+            
+            if (toggleBtn && passwordInput) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const eyeIcon = toggleBtn.querySelector('.icon-eye');
+                    const eyeOffIcon = toggleBtn.querySelector('.icon-eye-off');
+                    
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        if (eyeIcon) eyeIcon.style.display = 'none';
+                        if (eyeOffIcon) eyeOffIcon.style.display = 'block';
+                    } else {
+                        passwordInput.type = 'password';
+                        if (eyeIcon) eyeIcon.style.display = 'block';
+                        if (eyeOffIcon) eyeOffIcon.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Form Validation Functions
+        function validateName() {
+            const nameInput = document.getElementById('userName');
+            const nameError = document.getElementById('nameError');
+            
+            if (!nameInput || !nameError) {
+                console.warn('Name input or error element not found');
+                return false;
+            }
+            
+            const name = nameInput.value.trim();
+
+            if (name.length === 0) {
+                nameError.textContent = 'Name is required';
+                nameError.classList.add('show');
+                return false;
+            } else if (name.length < 2) {
+                nameError.textContent = 'Name must be at least 2 characters';
+                nameError.classList.add('show');
+                return false;
+            } else {
+                nameError.classList.remove('show');
+                return true;
+            }
+        }
+
+        function validateEmail() {
+            const emailInput = document.getElementById('userEmail');
+            const emailError = document.getElementById('emailError');
+            
+            if (!emailInput || !emailError) {
+                console.warn('Email input or error element not found');
+                return false;
+            }
+            
+            const email = emailInput.value.trim().toLowerCase();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!email) {
+                emailError.textContent = 'Email is required';
+                emailError.classList.add('show');
+                return false;
+            } else if (!emailRegex.test(email)) {
+                emailError.textContent = 'Please enter a valid email address';
+                emailError.classList.add('show');
+                return false;
+            } else {
+                emailError.classList.remove('show');
+                return true;
+            }
+        }
+
+        function validatePassword() {
+            const passwordInput = document.getElementById('userPassword');
+            const passwordError = document.getElementById('passwordError');
+            
+            if (!passwordInput || !passwordError) {
+                console.warn('Password input or error element not found');
+                return false;
+            }
+            
+            const password = passwordInput.value;
+
+            if (!password) {
+                passwordError.textContent = 'Password is required';
+                passwordError.classList.add('show');
+                return false;
+            } else if (password.length < 8) {
+                passwordError.textContent = 'Password must be at least 8 characters';
+                passwordError.classList.add('show');
+                return false;
+            } else {
+                passwordError.classList.remove('show');
+                validatePasswordMatch();
+                return true;
+            }
+        }
+
+        function validatePasswordMatch() {
+            const passwordInput = document.getElementById('userPassword');
+            const confirmPasswordInput = document.getElementById('userConfirmPassword');
+            const confirmPasswordError = document.getElementById('confirmPasswordError');
+            
+            if (!passwordInput || !confirmPasswordInput || !confirmPasswordError) {
+                console.warn('Password match elements not found');
+                return false;
+            }
+
+            if (confirmPasswordInput.value && passwordInput.value !== confirmPasswordInput.value) {
+                confirmPasswordError.textContent = 'Passwords do not match';
+                confirmPasswordError.classList.add('show');
+                return false;
+            } else {
+                confirmPasswordError.classList.remove('show');
+                return true;
+            }
+        }
+
+        function clearFormErrors() {
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.classList.remove('show');
+            });
+            document.getElementById('formMessage').style.display = 'none';
+        }
+
+        // Handle Form Submission
+        async function handleAddUserSubmit(e) {
+            e.preventDefault();
+            console.log('Form submission handler called');
+
+            // Validate all fields
+            const isNameValid = validateName();
+            const isEmailValid = validateEmail();
+            const isPasswordValid = validatePassword();
+            const isPasswordMatch = validatePasswordMatch();
+
+            console.log('Validation results:', {
+                nameValid: isNameValid,
+                emailValid: isEmailValid,
+                passwordValid: isPasswordValid,
+                passwordMatch: isPasswordMatch
+            });
+
+            if (!isNameValid || !isEmailValid || !isPasswordValid || !isPasswordMatch) {
+                console.log('Validation failed, not submitting');
+                return;
+            }
+
+            const formData = {
+                name: document.getElementById('userName').value.trim(),
+                email: document.getElementById('userEmail').value.trim().toLowerCase(),
+                password: document.getElementById('userPassword').value,
+                confirm_password: document.getElementById('userConfirmPassword').value,
+                role: document.querySelector('input[name="role"]:checked').value,
+                department: document.getElementById('userDepartment').value || null
+            };
+
+            console.log('Form data to submit:', formData);
+
+            // Disable submit button during request
+            const submitBtn = document.querySelector('.btn-submit');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span>Creating...</span>';
+
+            try {
+                console.log('Sending POST request to /api/users');
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Response data:', result);
+
+                const messageEl = document.getElementById('formMessage');
+
+                if (response.ok && result.success) {
+                    // Success
+                    console.log('User created successfully');
+                    
+                    // Reset form
+                    document.getElementById('addUserForm').reset();
+                    clearFormErrors();
+                    
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    // Show success popup
+                    showSuccessPopup(result.user.name, result.user.role);
+                    
+                    // Reload users table after 3 seconds
+                    setTimeout(() => {
+                        loadUsers();
+                    }, 3000);
+                } else {
+                    // Error
+                    console.log('User creation failed:', result.error);
+                    messageEl.className = 'form-message error';
+                    messageEl.innerHTML = `
+                        Ã¢Å“â€” <strong>Error:</strong> ${result.error || 'Failed to create user'}
+                    `;
+                    messageEl.style.display = 'block';
+                    
+                    // Show specific field errors if available
+                    if (result.error) {
+                        if (result.error.includes('Email')) {
+                            document.getElementById('emailError').textContent = result.error;
+                            document.getElementById('emailError').classList.add('show');
+                        } else if (result.error.includes('Password')) {
+                            document.getElementById('passwordError').textContent = result.error;
+                            document.getElementById('passwordError').classList.add('show');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                const messageEl = document.getElementById('formMessage');
+                messageEl.className = 'form-message error';
+                messageEl.innerHTML = `
+                    Ã¢Å“â€” <strong>Error:</strong> ${error.message || 'Failed to create user'}
+                `;
+                messageEl.style.display = 'block';
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+
+        // Popup Modal Functions
+        function showSuccessPopup(userName, userRole) {
+            const popup = document.getElementById('successPopup');
+            const title = document.getElementById('popupTitle');
+            const message = document.getElementById('popupMessage');
+            
+            title.textContent = 'Ã¢Å“â€œ User Created Successfully!';
+            message.innerHTML = `
+                User account created for:<br>
+                <strong style="font-size: 16px; color: #28a745;">${userName}</strong><br>
+                <span style="color: #666; font-size: 14px;">Role: ${userRole.toUpperCase()}</span>
+            `;
+            
+            popup.style.display = 'flex';
+        }
+
+        function closePopup() {
+            const popup = document.getElementById('successPopup');
+            popup.style.display = 'none';
+        }
+
+        // Close popup when clicking on overlay
+        document.addEventListener('DOMContentLoaded', function() {
+            const popupOverlay = document.getElementById('successPopup');
+            if (popupOverlay) {
+                popupOverlay.addEventListener('click', function(e) {
+                    if (e.target === popupOverlay) {
+                        closePopup();
+                    }
+                });
+            }
+
+            // Setup info icon modals
+            const staffInfoBtn = document.getElementById('staffInfoBtn');
+            const patientsInfoBtn = document.getElementById('patientsInfoBtn');
+            const assignmentsInfoBtn = document.getElementById('assignmentsInfoBtn');
+            
+            const staffModal = document.getElementById('staffInfoModal');
+            const patientsModal = document.getElementById('patientsInfoModal');
+            const assignmentsModal = document.getElementById('assignmentsInfoModal');
+
+            // Staff Info
+            staffInfoBtn?.addEventListener('click', () => {
+                staffModal?.classList.add('active');
+            });
+            document.getElementById('staffInfoModalClose')?.addEventListener('click', () => {
+                staffModal?.classList.remove('active');
+            });
+
+            // Patients Info
+            patientsInfoBtn?.addEventListener('click', () => {
+                patientsModal?.classList.add('active');
+            });
+            document.getElementById('patientsInfoModalClose')?.addEventListener('click', () => {
+                patientsModal?.classList.remove('active');
+            });
+
+            // Assignments Info
+            assignmentsInfoBtn?.addEventListener('click', () => {
+                assignmentsModal?.classList.add('active');
+            });
+            document.getElementById('assignmentsInfoModalClose')?.addEventListener('click', () => {
+                assignmentsModal?.classList.remove('active');
+            });
+
+            // Close modals when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === staffModal) staffModal?.classList.remove('active');
+                if (event.target === patientsModal) patientsModal?.classList.remove('active');
+                if (event.target === assignmentsModal) assignmentsModal?.classList.remove('active');
+            });
+        });
+
+        // === ASSIGNMENT MANAGEMENT ===
+        async function loadAssignmentData() {
+            try {
+                // Load patients, users, and assignments for the form
+                const [patientsRes, usersRes, assignmentsRes] = await Promise.all([
+                    fetch('/api/patients'),
+                    fetch('/api/users'),
+                    fetch('/api/assignments')
+                ]);
+                
+                if (!patientsRes.ok || !usersRes.ok || !assignmentsRes.ok) return;
+                
+                const patientsData = await patientsRes.json();
+                const usersData = await usersRes.json();
+                const assignmentsData = await assignmentsRes.json();
+                
+                // Populate patient dropdown
+                const patientSelect = document.getElementById('assignPatientSelect');
+                if (patientSelect && patientsData.success && Array.isArray(patientsData.patients)) {
+                    patientSelect.innerHTML = '<option value="">Select patient...</option>';
+                    patientsData.patients.forEach(p => {
+                        const option = document.createElement('option');
+                        option.value = p.id;
+                        option.textContent = `${p.name} (${p.medical_id})`;
+                        patientSelect.appendChild(option);
+                    });
+                }
+                
+                // Populate staff dropdown with all users from API
+                const staffSelect = document.getElementById('assignStaffSelect');
+                if (staffSelect && usersData.success && Array.isArray(usersData.users)) {
+                    staffSelect.innerHTML = '<option value="">Select staff...</option>';
+                    usersData.users.forEach(staffMember => {
+                        const option = document.createElement('option');
+                        option.value = staffMember.id;
+                        option.textContent = `${staffMember.name} (${staffMember.role})`;
+                        staffSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading assignment data:', error);
+            }
+        }
+
+        // Setup create assignment button
+        document.addEventListener('DOMContentLoaded', function() {
+            const createBtn = document.getElementById('createAssignmentBtn');
+            if (createBtn) {
+                createBtn.addEventListener('click', async function() {
+                    const patientId = document.getElementById('assignPatientSelect').value;
+                    const userId = document.getElementById('assignStaffSelect').value;
+                    const roleType = document.getElementById('assignRoleSelect').value;
+                    
+                    if (!patientId || !userId) {
+                        alert('Please select both patient and staff member');
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch('/api/assignments', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                patient_id: parseInt(patientId),
+                                user_id: parseInt(userId),
+                                role_type: roleType
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            alert('Assignment created successfully!');
+                            // Reset form
+                            document.getElementById('assignPatientSelect').value = '';
+                            document.getElementById('assignStaffSelect').value = '';
+                            loadAssignments(); // Reload the list
+                        } else {
+                            alert('Error: ' + (result.error || 'Failed to create assignment'));
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error creating assignment');
+                    }
+                });
+            }
+        });
+
+// ========== THEME TOGGLE ==========
+(function() {
+    const html = document.documentElement;
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+    
+    // Load saved theme or default to light
+    function loadTheme() {
+        const saved = localStorage.getItem('theme_preference') || 'light';
+        applyTheme(saved);
+    }
+    
+    function applyTheme(theme) {
+        body.setAttribute('data-theme', theme);
+        localStorage.setItem('theme_preference', theme);
+        updateToggleButton(theme);
+    }
+    
+    function updateToggleButton(theme) {
+        if (themeToggle) {
+            const moonIcon = themeToggle.querySelector('.icon-moon');
+            const sunIcon = themeToggle.querySelector('.icon-sun');
+            if (theme === 'dark') {
+                if (moonIcon) moonIcon.style.display = 'none';
+                if (sunIcon) sunIcon.style.display = 'block';
+                themeToggle.classList.add('dark-mode');
+                themeToggle.classList.remove('light-mode');
+            } else {
+                if (moonIcon) moonIcon.style.display = 'block';
+                if (sunIcon) sunIcon.style.display = 'none';
+                themeToggle.classList.add('light-mode');
+                themeToggle.classList.remove('dark-mode');
+            }
+        }
+    }
+    
+    // Toggle theme on button click
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const current = body.getAttribute('data-theme') || 'light';
+            const newTheme = current === 'light' ? 'dark' : 'light';
+            applyTheme(newTheme);
+        });
+    }
+    
+    // Load theme on page load
+    loadTheme();
+})();
+    </script>
+
+    <!-- Info Modals -->
+    <div id="staffInfoModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="staffInfoModalClose">&times;</span>
+            <div class="modal-header">Total Staff</div>
+            <div class="modal-body">
+                <p>This represents the total number of healthcare staff members registered in the system, including:</p>
+                <ul style="margin: 12px 0; padding-left: 20px;">
+                    <li><strong>Doctors:</strong> Medical professionals authorized to diagnose and treat patients</li>
+                    <li><strong>Nurses:</strong> Medical professionals who assist in patient care and data entry</li>
+                    <li><strong>Admins:</strong> System administrators who manage staff and patient assignments</li>
+                </ul>
+                <p style="margin-top: 12px;">This count helps you understand the size of your healthcare team and resource allocation.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="patientsInfoModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="patientsInfoModalClose">&times;</span>
+            <div class="modal-header">Total Patients</div>
+            <div class="modal-body">
+                <p>This represents the total number of patients registered in the system across all departments and timeframes.</p>
+                <p style="margin-top: 12px;"><strong>Note:</strong> This includes all patients regardless of whether they have been assigned to specific staff members or have completed X-ray analyses.</p>
+                <p style="margin-top: 12px;">This metric helps you understand the total patient base and system utilization. Compare this with "Active Assignments" to identify patients who may need staff assignment.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="assignmentsInfoModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="assignmentsInfoModalClose">&times;</span>
+            <div class="modal-header">Active Assignments</div>
+            <div class="modal-body">
+                <p>This represents the number of <strong>unique patients who have at least one staff member assigned to them</strong>.</p>
+                <p style="margin-top: 12px;"><strong>Example:</strong> If Patient A is assigned to 1 doctor and 1 nurse (2 assignments), they are counted as 1 in this metric.</p>
+                <p style="margin-top: 12px;"><strong>Key insight:</strong> If "Active Assignments" is less than "Total Patients", it means some patients don't have any assigned staff. Consider making assignments for better care coordination.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

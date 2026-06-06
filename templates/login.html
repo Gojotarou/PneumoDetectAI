@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PneumoDetect AI</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box }
+        body { background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #075985 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif }
+        .login-wrapper { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px }
+        .login-container { background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(2, 132, 199, 0.3), 0 0 1px rgba(0,0,0,0.1); padding: 60px 48px; max-width: 450px; width: 100%; position: relative; overflow: hidden }
+        .login-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #0284c7, #0369a1, #075985) }
+        .login-container h1 { font-size: 32px; color: #0c4a6e; margin: 0 0 8px; text-align: center; font-weight: 800; letter-spacing: -0.5px }
+        .login-container .subtitle { color: #0369a1; text-align: center; margin-bottom: 40px; font-size: 14px; font-weight: 500; letter-spacing: 0.3px }
+        .form-group { margin-bottom: 24px }
+        .form-group label { display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 10px; font-size: 14px; letter-spacing: 0.2px }
+        .form-group input { width: 100%; padding: 14px 16px; border: 2px solid #e0f2fe; border-radius: 10px; font-size: 14px; font-family: inherit; transition: all 0.3s ease; background: #f8fafc }
+        .password-field { position: relative }
+        .password-field input { padding-right: 88px }
+        .toggle-password-btn { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); border: none; background: transparent; color: #0369a1; cursor: pointer; padding: 6px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
+        .toggle-password-btn:hover { background: rgba(2, 132, 199, 0.08); color: #0c4a6e }
+        .toggle-password-btn svg { width: 18px; height: 18px; stroke: currentColor; }
+        .toggle-password-btn .icon-eye-off { display: none; }
+        .toggle-password-btn.is-visible .icon-eye { display: none; }
+        .toggle-password-btn.is-visible .icon-eye-off { display: block; }
+        .form-group input::placeholder { color: #94a3b8 }
+        .form-group input:focus { outline: none; border-color: #0284c7; background: white; box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.08) }
+        .btn-login { width: 100%; padding: 14px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-top: 8px; letter-spacing: 0.5px; box-shadow: 0 8px 16px rgba(2, 132, 199, 0.25) }
+        .btn-login:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(2, 132, 199, 0.35) }
+        .btn-login:active { transform: translateY(-1px) }
+        .btn-login:disabled { opacity: 0.7; cursor: not-allowed; transform: none }
+        .error-message { color: #dc2626; font-size: 13px; margin-top: 12px; text-align: center; display: none; background: #fee2e2; padding: 12px; border-radius: 8px; border-left: 4px solid #dc2626; font-weight: 500 }
+        .success-message { color: #059669; font-size: 13px; margin-top: 12px; text-align: center; display: none; background: #d1fae5; padding: 12px; border-radius: 8px; border-left: 4px solid #059669; font-weight: 500 }
+        .demo-credentials { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0284c7; padding: 20px; border-radius: 10px; margin-top: 32px; font-size: 13px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1) }
+        .demo-credentials h4 { margin: 0 0 14px; color: #0c4a6e; font-weight: 700; font-size: 14px; letter-spacing: 0.3px }
+        .demo-credentials p { margin: 8px 0; color: #0369a1; line-height: 1.6 }
+        .demo-credentials code { background: white; padding: 6px 10px; border-radius: 6px; font-family: 'Courier New', monospace; color: #0284c7; font-weight: 600; border: 1px solid #e0f2fe }
+        .loading { display: none; text-align: center }
+        .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #e0f2fe; border-top: 3px solid #0284c7; border-radius: 50%; animation: spin 1s linear infinite }
+        @keyframes spin { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
+        .loading p { margin-top: 12px; color: #0284c7; font-weight: 600; font-size: 14px }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-container">
+            <div style="text-align: center;">
+                <div class="logo-icon" style="display: inline-flex; width: 56px; height: 56px; margin-bottom: 16px;"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+            </div>
+            <h1>PneumoDetect AI</h1>
+            <p class="subtitle">AI-Powered Pneumonia Detection System</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-field">
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <button type="button" id="togglePasswordBtn" class="toggle-password-btn" aria-label="Show password" aria-pressed="false" title="Show password">
+                            <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.477 10.486a3 3 0 0 0 4.037 4.037"/><path d="M9.88 5.09A10.94 10.94 0 0 1 12 4.909c4.478 0 8.268 2.943 9.542 7.091a10.534 10.534 0 0 1-4.293 5.28"/><path d="M6.228 6.235A10.45 10.45 0 0 0 2.458 12a10.534 10.534 0 0 0 7.262 6.654"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="error-message" id="errorMsg"></div>
+                <div class="success-message" id="successMsg"></div>
+
+                <button type="submit" class="btn-login" id="loginBtn">Sign In</button>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 12px; color: #667eea">Logging in...</p>
+                </div>
+            </form>
+
+            <div class="demo-credentials">
+                <h4>Demo Credentials</h4>
+                <p><strong>Admin:</strong> admin@pneumodetect.com / admin123</p>
+                <p><strong>Doctor:</strong> doctor@pneumodetect.com / doctor123</p>
+                <p><strong>Nurse:</strong> nurse@pneumodetect.com / nurse123</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const passwordInput = document.getElementById('password');
+        const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+
+        togglePasswordBtn?.addEventListener('click', function() {
+            const isHidden = passwordInput.type === 'password';
+            passwordInput.type = isHidden ? 'text' : 'password';
+            togglePasswordBtn.classList.toggle('is-visible', isHidden);
+            togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+            togglePasswordBtn.setAttribute('title', isHidden ? 'Hide password' : 'Show password');
+            togglePasswordBtn.setAttribute('aria-pressed', String(isHidden));
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+            const loginBtn = document.getElementById('loginBtn');
+            const loading = document.getElementById('loading');
+
+            // Clear messages
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            // Validation
+            if (!email || !password) {
+                errorMsg.textContent = 'Please enter email and password';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Show loading
+            loginBtn.style.display = 'none';
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    successMsg.textContent = 'Login successful! Redirecting...';
+                    successMsg.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = result.redirect;
+                    }, 1000);
+                } else {
+                    errorMsg.textContent = result.error || 'Login failed. Please try again.';
+                    errorMsg.style.display = 'block';
+                    loginBtn.style.display = 'block';
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMsg.textContent = 'An error occurred. Please try again.';
+                errorMsg.style.display = 'block';
+                loginBtn.style.display = 'block';
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
